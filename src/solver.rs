@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 
 type Time = u32;
 type NodeIdx = usize;
@@ -94,7 +94,7 @@ pub fn solve(table: &[Vec<u32>], settings: SolverSettings) -> (Vec<Solution>, St
         settings,
         n,
         solutions: Vec::new(),
-        seen_solutions: HashSet::new(),
+        seen_solutions: FxHashSet::default(),
         start,
         finish,
         iterations: 0,
@@ -121,7 +121,7 @@ struct SolverContext<'a> {
     nodes: &'a [PlaceInfo],
 
     solutions: Vec<Solution>,
-    seen_solutions: HashSet<Vec<NodeIdx>>,
+    seen_solutions: FxHashSet<Vec<NodeIdx>>,
 
     n: usize,
     start: NodeIdx,
