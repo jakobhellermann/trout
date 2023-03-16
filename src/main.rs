@@ -80,6 +80,7 @@ fn main() -> Result<()> {
             max_restarts: 1000,
             required_restarts: true,
             restart_penalty: 190,
+            deduplicate_solutions: false,
         },
     );
     let duration = start.elapsed();

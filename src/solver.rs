@@ -38,6 +38,8 @@ pub struct SolverSettings {
     pub max_restarts: u32,
     pub required_restarts: bool,
     pub restart_penalty: Time,
+
+    pub deduplicate_solutions: bool,
 }
 
 pub struct Stats {
@@ -176,11 +178,10 @@ impl SolverContext<'_> {
                     .sum();
                 let solution = Solution(truncated.to_vec(), time);
 
-                if self.seen_solutions.insert(solution.0.clone()) {
+                if !self.settings.deduplicate_solutions
+                    || self.seen_solutions.insert(solution.0.clone())
+                {
                     self.solutions.push(solution);
-                    if self.solutions.len() % 100000 == 0 {
-                        dbg!(self.solutions.len());
-                    }
                 }
             }
             return;
