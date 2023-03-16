@@ -1,4 +1,10 @@
-TSP solver for routing celeste lobbies for TASing (ported from https://github.com/TheRoboManTAS/Celeste-TAS-lobby-router)
+<img src="./images/logo_128.png" align="left" width="128px"/>
+
+TSP solver for routing celeste lobbies while TASing
+
+(ported from https://github.com/TheRoboManTAS/Celeste-TAS-lobby-router)
+
+<br clear="left"/>
 
 # usage
 
