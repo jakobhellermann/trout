@@ -1,3 +1,7 @@
+#[cfg(feature = "heap_profiling")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 mod solver;
 
 use anyhow::{anyhow, Result};

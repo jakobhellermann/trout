@@ -161,9 +161,11 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
     fn emit_solution(&mut self) {
         let solution = &self.trail[0..self.index + 1];
         let time: Time = solution
-            .iter()
-            .zip(solution.iter().skip(1))
-            .map(|(&from, &to)| {
+            .windows(2)
+            .map(|segment| {
+                let to = segment[1];
+                let from = segment[0];
+
                 if to == self.start {
                     190
                 } else {
