@@ -20,7 +20,7 @@ fn solve_table(table: &str) -> Result<()> {
         &table,
         trout::solver::SolverSettings {
             max_restarts: None,
-            required_restarts: true,
+            only_required_restarts: true,
             restart_penalty: 190,
             deduplicate_solutions: false,
         },

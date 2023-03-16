@@ -35,7 +35,7 @@ impl PlaceInfo {
 
 pub struct SolverSettings {
     pub max_restarts: Option<u32>,
-    pub required_restarts: bool,
+    pub only_required_restarts: bool,
     pub restart_penalty: Time,
 
     pub deduplicate_solutions: bool,
@@ -141,7 +141,7 @@ struct SolverContext<'a, F> {
 
 impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
     fn can_restart(&self, pos: NodeIdx, must: bool) -> bool {
-        if self.settings.required_restarts && !must {
+        if self.settings.only_required_restarts && !must {
             return false;
         }
 
