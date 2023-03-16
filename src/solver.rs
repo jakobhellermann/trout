@@ -142,15 +142,15 @@ struct SolverContext<'a, F> {
 
 impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
     fn can_restart(&self, pos: NodeIdx, must: bool) -> bool {
-        match (self.inf_restarts, self.settings.required_restarts) {
-            (true, true) => pos != self.start && must,
-            (true, false) => pos != self.start,
-            (false, true) => {
-                pos != self.start && (self.restart_count < self.settings.max_restarts) && must
-            }
-            (false, false) => {
-                pos != self.start && (self.restart_count < self.settings.max_restarts)
-            }
+        let can_restart = match self.inf_restarts {
+            true => pos != self.start,
+            false => pos != self.start && (self.restart_count < self.settings.max_restarts),
+        };
+
+        if self.settings.required_restarts {
+            can_restart && must
+        } else {
+            can_restart
         }
     }
 
@@ -188,8 +188,7 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
 
         let targets = &self.nodes[pos].targets;
 
-        let mut has_dead_end = false;
-        let mut dead_end = 0;
+        let mut dead_end = None;
         'targets: for &target in targets {
             if self.can_go[target] {
                 let node = &self.nodes[target];
@@ -199,16 +198,15 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
                     }
                 }
 
-                if has_dead_end {
+                if dead_end.is_some() {
                     return;
                 }
 
-                has_dead_end = true;
-                dead_end = target;
+                dead_end = Some(target);
             }
         }
 
-        if has_dead_end {
+        if let Some(dead_end) = dead_end {
             self.visit_count += 1;
             self.index += 1;
             self.can_go[dead_end] = false;
