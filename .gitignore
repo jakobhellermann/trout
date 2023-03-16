@@ -1,2 +1,6 @@
 /target
 /StrawberryJamTAS
+
+/dhat-heap.json
+/flamegraph.svg
+/perf.data*
