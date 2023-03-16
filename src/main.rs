@@ -47,28 +47,6 @@ impl std::fmt::Debug for Node {
     }
 }
 
-/*fn table_to_petgraph(table: &Table) -> DiGraph<Node, Length> {
-    let mut graph = DiGraph::new();
-
-    for node_idx in 0..table.len() {
-        graph.add_node(Node(node_idx as u32));
-    }
-    for (from, row) in table.iter().enumerate() {
-        let from = from as u32;
-        for (to, &length) in row.iter().enumerate() {
-            let to = to as u32;
-
-            if length == 60000 || length == 0 {
-                continue;
-            }
-
-            graph.add_edge(from.into(), to.into(), length);
-        }
-    }
-
-    graph
-}*/
-
 fn main() -> Result<()> {
     let path = std::env::args()
         .nth(1)
