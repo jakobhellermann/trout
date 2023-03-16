@@ -142,15 +142,13 @@ struct SolverContext<'a, F> {
 
 impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
     fn can_restart(&self, pos: NodeIdx, must: bool) -> bool {
-        let can_restart = match self.inf_restarts {
+        if self.settings.required_restarts && !must {
+            return false;
+        }
+
+        match self.inf_restarts {
             true => pos != self.start,
             false => pos != self.start && (self.restart_count < self.settings.max_restarts),
-        };
-
-        if self.settings.required_restarts {
-            can_restart && must
-        } else {
-            can_restart
         }
     }
 
