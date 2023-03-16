@@ -16,7 +16,7 @@ fn parse_table(table: &str) -> Result<Table> {
             let line = strip_around("[", "]", line)
                 .ok_or_else(|| anyhow!("table doesn't contain arrays"))?;
             let connections = line
-                .split(",")
+                .split(',')
                 .map(|val| {
                     val.trim()
                         .parse::<Length>()
