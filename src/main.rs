@@ -82,6 +82,9 @@ fn main() -> Result<()> {
     let mut n_solutions = 0;
     let mut fastest_solution = None;
 
+    #[cfg(feature = "heap_profiling")]
+    let _profiler = dhat::Profiler::new_heap();
+
     let stats = solver::solve(
         &table,
         solver::SolverSettings {

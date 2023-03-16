@@ -6,3 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.69"
 rustc-hash = "1.1.0"
+dhat = { version = "0.3.2", optional = true }
+
+[features]
+heap_profiling = ["dhat"]
