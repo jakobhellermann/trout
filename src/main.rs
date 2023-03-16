@@ -19,7 +19,7 @@ fn solve_table(table: &str) -> Result<()> {
     let stats = trout::solver::solve(
         &table,
         trout::solver::SolverSettings {
-            max_restarts: 1000,
+            max_restarts: None,
             required_restarts: true,
             restart_penalty: 190,
             deduplicate_solutions: false,

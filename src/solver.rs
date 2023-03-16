@@ -34,7 +34,7 @@ impl PlaceInfo {
 }
 
 pub struct SolverSettings {
-    pub max_restarts: u32,
+    pub max_restarts: Option<u32>,
     pub required_restarts: bool,
     pub restart_penalty: Time,
 
@@ -104,8 +104,6 @@ where
         iterations: 0,
         restart_count: 0,
         can_go: vec![true; n],
-        //inf_restarts: settings.max_restarts.is_none(),
-        inf_restarts: false, // TODO
         trail: vec![0; n + nodes[start].targets.len()],
         index: 0,
         visit_count: 0,
@@ -133,7 +131,6 @@ struct SolverContext<'a, F> {
 
     iterations: u32,
     restart_count: u32,
-    inf_restarts: bool,
 
     index: usize,
     visit_count: usize,
@@ -148,9 +145,9 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
             return false;
         }
 
-        match self.inf_restarts {
-            true => pos != self.start,
-            false => pos != self.start && (self.restart_count < self.settings.max_restarts),
+        match self.settings.max_restarts {
+            None => pos != self.start,
+            Some(max_restarts) => pos != self.start && (self.restart_count < max_restarts),
         }
     }
 
