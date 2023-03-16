@@ -158,30 +158,32 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
         self.n - 1
     }
 
+    fn emit_solution(&mut self) {
+        let solution = &self.trail[0..self.index + 1];
+        let time: Time = solution
+            .iter()
+            .zip(solution.iter().skip(1))
+            .map(|(&from, &to)| {
+                if to == self.start {
+                    190
+                } else {
+                    self.nodes[from].frames_to(to)
+                }
+            })
+            .sum();
+
+        if !self.settings.deduplicate_solutions || self.seen_solutions.insert(solution.to_vec()) {
+            (self.emit_solution)(solution, time);
+        }
+    }
+
     fn path_find(&mut self, pos: NodeIdx) {
         self.trail[self.index] = pos;
         self.iterations += 1;
 
         if pos == self.finish {
             if self.visit_count == self.place_count() {
-                let solution = &self.trail[0..self.index + 1];
-                let time: Time = solution
-                    .iter()
-                    .zip(solution.iter().skip(1))
-                    .map(|(&from, &to)| {
-                        if to == self.start {
-                            190
-                        } else {
-                            self.nodes[from].frames_to(to)
-                        }
-                    })
-                    .sum();
-
-                if !self.settings.deduplicate_solutions
-                    || self.seen_solutions.insert(solution.to_vec())
-                {
-                    (self.emit_solution)(solution, time);
-                }
+                self.emit_solution();
             }
             return;
         }
