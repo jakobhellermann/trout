@@ -1,3 +1,5 @@
+// code taking and adapted from https://github.com/TheRoboManTAS/Celeste-TAS-lobby-router/, credit goes to @TheRoboManTAS
+
 use rustc_hash::FxHashSet;
 
 type Time = u32;
