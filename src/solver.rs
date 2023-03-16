@@ -31,9 +31,6 @@ impl PlaceInfo {
     }
 }
 
-#[derive(Debug)]
-pub struct Solution(pub Vec<NodeIdx>, pub Time);
-
 pub struct SolverSettings {
     pub max_restarts: u32,
     pub required_restarts: bool,
@@ -46,7 +43,10 @@ pub struct Stats {
     pub iterations: u32,
 }
 
-pub fn solve(table: &[Vec<u32>], settings: SolverSettings) -> (Vec<Solution>, Stats) {
+pub fn solve<F>(table: &[Vec<u32>], settings: SolverSettings, emit_solution: F) -> Stats
+where
+    F: FnMut(&[NodeIdx], Time),
+{
     let n = table[0].len();
 
     let files: Vec<FileInfo> = table
@@ -95,7 +95,7 @@ pub fn solve(table: &[Vec<u32>], settings: SolverSettings) -> (Vec<Solution>, St
     let mut cx = SolverContext {
         settings,
         n,
-        solutions: Vec::new(),
+        emit_solution,
         seen_solutions: FxHashSet::default(),
         start,
         finish,
@@ -115,14 +115,14 @@ pub fn solve(table: &[Vec<u32>], settings: SolverSettings) -> (Vec<Solution>, St
         iterations: cx.iterations,
     };
 
-    (cx.solutions, stats)
+    stats
 }
 
-struct SolverContext<'a> {
+struct SolverContext<'a, F> {
     settings: SolverSettings,
     nodes: &'a [PlaceInfo],
 
-    solutions: Vec<Solution>,
+    emit_solution: F,
     seen_solutions: FxHashSet<Vec<NodeIdx>>,
 
     n: usize,
@@ -140,7 +140,7 @@ struct SolverContext<'a> {
     trail: Vec<NodeIdx>,
 }
 
-impl SolverContext<'_> {
+impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
     fn can_restart(&self, pos: NodeIdx, must: bool) -> bool {
         match (self.inf_restarts, self.settings.required_restarts) {
             (true, true) => pos != self.start && must,
@@ -164,10 +164,10 @@ impl SolverContext<'_> {
 
         if pos == self.finish {
             if self.visit_count == self.place_count() {
-                let truncated = &self.trail[0..self.index + 1];
-                let time: Time = truncated
+                let solution = &self.trail[0..self.index + 1];
+                let time: Time = solution
                     .iter()
-                    .zip(truncated.iter().skip(1))
+                    .zip(solution.iter().skip(1))
                     .map(|(&from, &to)| {
                         if to == self.start {
                             190
@@ -176,12 +176,11 @@ impl SolverContext<'_> {
                         }
                     })
                     .sum();
-                let solution = Solution(truncated.to_vec(), time);
 
                 if !self.settings.deduplicate_solutions
-                    || self.seen_solutions.insert(solution.0.clone())
+                    || self.seen_solutions.insert(solution.to_vec())
                 {
-                    self.solutions.push(solution);
+                    (self.emit_solution)(solution, time);
                 }
             }
             return;

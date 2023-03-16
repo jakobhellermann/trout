@@ -74,7 +74,11 @@ fn main() -> Result<()> {
     let table = parse_table(&table)?;
 
     let start = std::time::Instant::now();
-    let (mut solutions, stats) = solver::solve(
+
+    let mut n_solutions = 0;
+    let mut fastest_solution = None;
+
+    let stats = solver::solve(
         &table,
         solver::SolverSettings {
             max_restarts: 1000,
@@ -82,16 +86,25 @@ fn main() -> Result<()> {
             restart_penalty: 190,
             deduplicate_solutions: false,
         },
+        |solution, time| {
+            n_solutions += 1;
+            match fastest_solution {
+                None => fastest_solution = Some((solution.to_vec(), time)),
+                Some((_, prev_time)) if time < prev_time => {
+                    fastest_solution = Some((solution.to_vec(), time))
+                }
+                Some(_) => {}
+            }
+        },
     );
     let duration = start.elapsed();
 
-    solutions.sort_by_key(|a| a.1);
-    for solution in solutions.iter().take(10) {
-        println!("{:?}", solution);
+    if let Some((solution, time)) = fastest_solution {
+        println!("{:?} - {}", solution, time);
     }
 
     println!("Routing took {:02}s", duration.as_secs_f32());
-    println!("{} solutions", solutions.len());
+    println!("{} solutions", n_solutions);
     println!("Pathfind function called {} times.", stats.iterations);
 
     Ok(())
