@@ -2,55 +2,11 @@
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
-mod solver;
-
+use anyhow::Result;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Result};
-
-type Length = u32;
-type Table = Vec<Vec<Length>>;
-
-fn strip_around<'a>(prefix: &str, suffix: &str, input: &'a str) -> Option<&'a str> {
-    input.strip_prefix(prefix)?.strip_suffix(suffix)
-}
-
-fn parse_table(table: &str) -> Result<Table> {
-    let table = table
-        .lines()
-        .map(|line| {
-            let line = strip_around("[", "]", line)
-                .ok_or_else(|| anyhow!("table doesn't contain arrays"))?;
-            let connections = line
-                .split(',')
-                .map(|val| {
-                    val.trim()
-                        .parse::<Length>()
-                        .map_err(|e| anyhow!("failed to parse int: {e}"))
-                })
-                .collect::<Result<Vec<_>>>()?;
-
-            Ok(connections)
-        })
-        .collect::<Result<Vec<_>>>()?;
-
-    let length = table.get(0).ok_or_else(|| anyhow!("no table data"))?.len();
-    if table[1..].iter().any(|row| row.len() != length) {
-        anyhow::bail!("not every table row has the same length (expected {length})");
-    }
-
-    Ok(table)
-}
-
-struct Node(u32);
-impl std::fmt::Debug for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Node {}", self.0)
-    }
-}
-
 fn solve_table(table: &str) -> Result<()> {
-    let table = parse_table(&table)?;
+    let table = trout::parse_table(&table)?;
 
     let start = std::time::Instant::now();
 
@@ -60,9 +16,9 @@ fn solve_table(table: &str) -> Result<()> {
     #[cfg(feature = "heap_profiling")]
     let _profiler = dhat::Profiler::new_heap();
 
-    let stats = solver::solve(
+    let stats = trout::solver::solve(
         &table,
-        solver::SolverSettings {
+        trout::solver::SolverSettings {
             max_restarts: 1000,
             required_restarts: true,
             restart_penalty: 190,
