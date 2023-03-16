@@ -1,12 +1,16 @@
+use std::collections::HashSet;
+
 type Time = u32;
 type NodeIdx = usize;
 
+#[derive(Debug)]
 struct FileInfo {
     start: NodeIdx,
     end: NodeIdx,
     time: Time,
 }
 
+#[derive(Debug)]
 struct PlaceInfo {
     node: NodeIdx,
 
@@ -28,7 +32,7 @@ impl PlaceInfo {
 }
 
 #[derive(Debug)]
-pub struct Solution(Vec<NodeIdx>, Time);
+pub struct Solution(pub Vec<NodeIdx>, pub Time);
 
 pub struct SolverSettings {
     pub max_restarts: u32,
@@ -36,17 +40,25 @@ pub struct SolverSettings {
     pub restart_penalty: Time,
 }
 
-pub fn solve(table: &[Vec<u32>], settings: SolverSettings) -> Vec<Solution> {
+pub struct Stats {
+    pub iterations: u32,
+}
+
+pub fn solve(table: &[Vec<u32>], settings: SolverSettings) -> (Vec<Solution>, Stats) {
     let n = table[0].len();
 
     let files: Vec<FileInfo> = table
         .iter()
         .enumerate()
         .flat_map(|(start, row)| {
-            row.iter()
-                .enumerate()
-                .map(move |(end, &time)| FileInfo { start, end, time })
+            let mut row = row.iter().enumerate();
+            let restart = row.next().unwrap().0;
+            // TODO
+            assert!(restart == 190 || restart == 0);
+
+            row.map(move |(end, &time)| FileInfo { start, end, time })
         })
+        .filter(|file| file.time < 60000 && file.start != file.end)
         .collect();
 
     let mut nodes: Vec<PlaceInfo> = (0..n)
@@ -76,12 +88,13 @@ pub fn solve(table: &[Vec<u32>], settings: SolverSettings) -> Vec<Solution> {
     }
 
     let start = 0;
-    let finish = n;
+    let finish = n - 1;
 
     let mut cx = SolverContext {
         settings,
         n,
         solutions: Vec::new(),
+        seen_solutions: HashSet::new(),
         start,
         finish,
         iterations: 0,
@@ -96,7 +109,11 @@ pub fn solve(table: &[Vec<u32>], settings: SolverSettings) -> Vec<Solution> {
     };
     cx.path_find(start);
 
-    cx.solutions
+    let stats = Stats {
+        iterations: cx.iterations,
+    };
+
+    (cx.solutions, stats)
 }
 
 struct SolverContext<'a> {
@@ -104,6 +121,7 @@ struct SolverContext<'a> {
     nodes: &'a [PlaceInfo],
 
     solutions: Vec<Solution>,
+    seen_solutions: HashSet<Vec<NodeIdx>>,
 
     n: usize,
     start: NodeIdx,
@@ -139,27 +157,31 @@ impl SolverContext<'_> {
     }
 
     fn path_find(&mut self, pos: NodeIdx) {
-        println!("path_find {pos} index={}", self.index);
-
         self.trail[self.index] = pos;
         self.iterations += 1;
 
         if pos == self.finish {
             if self.visit_count == self.place_count() {
                 let truncated = &self.trail[0..self.index + 1];
-                let time = truncated
+                let time: Time = truncated
                     .iter()
-                    .skip(1)
-                    .enumerate()
-                    .map(|(e, &i)| {
-                        if e == self.start {
-                            self.settings.restart_penalty
+                    .zip(truncated.iter().skip(1))
+                    .map(|(&from, &to)| {
+                        if to == self.start {
+                            190
                         } else {
-                            self.nodes[self.trail[i]].frames_to(e)
+                            self.nodes[from].frames_to(to)
                         }
                     })
                     .sum();
-                self.solutions.push(Solution(truncated.to_vec(), time));
+                let solution = Solution(truncated.to_vec(), time);
+
+                if self.seen_solutions.insert(solution.0.clone()) {
+                    self.solutions.push(solution);
+                    if self.solutions.len() % 100000 == 0 {
+                        dbg!(self.solutions.len());
+                    }
+                }
             }
             return;
         }
@@ -219,9 +241,7 @@ impl SolverContext<'_> {
         if self.can_restart(pos, must_restart) {
             self.index += 1;
             self.restart_count += 1;
-
             self.path_find(self.start);
-
             self.restart_count -= 1;
             self.index -= 1;
         }

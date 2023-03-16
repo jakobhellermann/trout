@@ -27,6 +27,7 @@ fn parse_table(table: &str) -> Result<Table> {
             Ok(connections)
         })
         .collect::<Result<Vec<_>>>()?;
+
     let length = table.get(0).ok_or_else(|| anyhow!("no table data"))?.len();
     if table[1..].iter().any(|row| row.len() != length) {
         anyhow::bail!("not every table row has the same length (expected {length})");
@@ -72,16 +73,25 @@ fn main() -> Result<()> {
 
     let table = parse_table(&table)?;
 
-    let solutions = solver::solve(
+    let start = std::time::Instant::now();
+    let (mut solutions, stats) = solver::solve(
         &table,
         solver::SolverSettings {
             max_restarts: 1000,
-            required_restarts: false,
+            required_restarts: true,
             restart_penalty: 190,
         },
     );
+    let duration = start.elapsed();
 
-    dbg!(&solutions);
+    solutions.sort_by_key(|a| a.1);
+    for solution in solutions.iter().take(10) {
+        println!("{:?}", solution);
+    }
+
+    println!("Routing took {:02}s", duration.as_secs_f32());
+    println!("{} solutions", solutions.len());
+    println!("Pathfind function called {} times.", stats.iterations);
 
     Ok(())
 }
