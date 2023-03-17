@@ -20,8 +20,8 @@ fn solve_table(table: &str) -> Result<()> {
     let _profiler = dhat::Profiler::new_heap();
 
     let settings = trout::solver::SolverSettings {
-        max_restarts: Some(1),
-        only_required_restarts: true,
+        max_restarts: None,
+        only_required_restarts: false,
         restart_penalty: 190,
     };
     let stats = trout::solver::solve(&table, &settings, |solution, time| {
