@@ -1,0 +1,16 @@
+{
+  "name": "trout",
+  "version": "1.0.0",
+  "source": "public/index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "homepage": "https://github.com/jakobhellermann/trout",
+  "dependencies": {
+    "parcel": "^2.8.3"
+  }
+}
