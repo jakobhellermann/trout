@@ -1,7 +1,5 @@
 // code taking and adapted from https://github.com/TheRoboManTAS/Celeste-TAS-lobby-router/, credit goes to @TheRoboManTAS
 
-use rustc_hash::FxHashSet;
-
 type Time = u32;
 type NodeIdx = usize;
 
@@ -37,8 +35,6 @@ pub struct SolverSettings {
     pub max_restarts: Option<u32>,
     pub only_required_restarts: bool,
     pub restart_penalty: Time,
-
-    pub deduplicate_solutions: bool,
 }
 
 pub struct Stats {
@@ -98,7 +94,6 @@ where
         settings,
         n,
         emit_solution,
-        seen_solutions: FxHashSet::default(),
         start,
         finish,
         iterations: 0,
@@ -123,7 +118,6 @@ struct SolverContext<'a, F> {
     nodes: &'a [PlaceInfo],
 
     emit_solution: F,
-    seen_solutions: FxHashSet<Vec<NodeIdx>>,
 
     n: usize,
     start: NodeIdx,
@@ -171,9 +165,7 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
             })
             .sum();
 
-        if !self.settings.deduplicate_solutions || self.seen_solutions.insert(solution.to_vec()) {
-            (self.emit_solution)(solution, time);
-        }
+        (self.emit_solution)(solution, time);
     }
 
     fn path_find(&mut self, pos: NodeIdx) {
