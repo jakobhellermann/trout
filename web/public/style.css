@@ -132,6 +132,17 @@ body {
 #outputList {
     padding: 0;
     list-style-type: decimal;
+
+    counter-reset: list;
+}
+
+#outputList li {
+    list-style: none;
+}
+
+#outputList li::before {
+    content: counter(list, decimal) ") ";
+    counter-increment: list;
 }
 
 #outputList :not(:first-child) {
