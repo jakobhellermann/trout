@@ -34,7 +34,7 @@ function createSolutionLi(solution: Solution) {
         let elements: (Element | string)[] = [];
         if (number === 0) {
             let restart = document.createElement("span");
-            restart.textContent = "R";
+            restart.textContent = "[R]";
             restart.className = "restart";
             elements.push(restart);
         } else {
