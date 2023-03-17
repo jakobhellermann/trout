@@ -71,8 +71,7 @@ body {
 #settings {
     display: grid;
     grid-template-columns: max-content max-content;
-    gap: 5px;
-
+    gap: 0.5rem;
 
     align-items: center;
 }
@@ -137,6 +136,10 @@ body {
 #outputList {
     padding: 0;
     list-style-type: decimal;
+}
+
+#outputList :not(:first-child) {
+    margin-top: 0.5rem;
 }
 
 #errorMessage {
