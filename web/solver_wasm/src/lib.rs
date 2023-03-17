@@ -20,11 +20,8 @@ fn doit(
     let mut previous_worst = u32::MAX;
     let mut best_solutions = Vec::new();
 
-    let mut i = 0;
     let stats = trout::solver::solve(&table, &settings, |solution, time| {
         if time < previous_worst {
-            i += 1;
-
             best_solutions.push((solution.to_vec(), time));
             best_solutions.sort_by_key(|&(_, time)| time);
             best_solutions.truncate(max_solutions);
@@ -38,10 +35,6 @@ fn doit(
                 .fold((std::u32::MAX, std::u32::MIN), |(min, max), &(_, time)| {
                     (min.min(time), max.max(time))
                 });
-        }
-
-        if i == 10000 {
-            panic!();
         }
     });
 
