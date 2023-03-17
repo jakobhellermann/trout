@@ -66,6 +66,10 @@ pub fn solve(
         restart_penalty,
     };
 
+    if max_solutions == 0 {
+        return Err("expected nonzero max amount of solutions".into());
+    }
+
     log(&format!("{:?}", settings));
 
     let stats = doit(
