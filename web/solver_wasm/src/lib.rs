@@ -31,7 +31,7 @@ fn doit(
 
             update_solutions(&best_solutions);
 
-            (previous_worst, previous_best) = best_solutions
+            (previous_best, previous_worst) = best_solutions
                 .iter()
                 .fold((std::u32::MAX, std::u32::MIN), |(min, max), &(_, time)| {
                     (min.min(time), max.max(time))
