@@ -27,7 +27,27 @@ function createSolutionLi(solution: Solution) {
     let timeEl = document.createElement("span");
     timeEl.textContent = `${formatDuration(solution.time * 17, true)} (${solution.time}) with`;
     let routeEl = document.createElement("code");
-    routeEl.textContent = solution.route.join(", ");
+
+    let routeElements = solution.route.flatMap<Element | string>((number, index) => {
+        if (index == 0) return [];
+
+        let elements: (Element | string)[] = [];
+        if (number === 0) {
+            let restart = document.createElement("span");
+            restart.textContent = "R";
+            restart.className = "restart";
+            elements.push(restart);
+        } else {
+            elements.push(number.toString());
+        }
+
+        if (index !== solution.route.length - 1) {
+            elements.push(", ");
+        }
+
+        return elements;
+    });
+    routeEl.replaceChildren(...routeElements);
 
     let li = document.createElement("li");
     li.className = "newSolution";

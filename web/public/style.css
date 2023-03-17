@@ -11,6 +11,7 @@ body {
     --bg-color: #fff;
 
     --highlight-color: rgb(189, 245, 255);
+    --restart-color: rgb(6, 180, 50);
 }
 
 body.dark-theme {
@@ -20,6 +21,7 @@ body.dark-theme {
     --bg-color: #121212;
 
     --highlight-color: rgb(29, 72, 80);
+    --restart-color: rgb(218, 165, 32);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,6 +32,7 @@ body.dark-theme {
         --bg-color: #fff;
 
         --highlight-color: rgb(189, 245, 255);
+        --restart-color: rgb(6, 180, 50);
     }
 
     body {
@@ -39,6 +42,7 @@ body.dark-theme {
         --bg-color: #121212;
 
         --highlight-color: rgb(29, 72, 80);
+        --restart-color: rgb(218, 165, 32);
     }
 }
 
@@ -116,6 +120,12 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+}
+
+
+.restart {
+    color: var(--restart-color);
+    font-weight: bolder;
 }
 
 .rightFooter {
