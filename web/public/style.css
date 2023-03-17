@@ -32,7 +32,13 @@ body {
     grid-column-end: 3;
 }
 
-.left .links {
+.infos {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+}
+
+.links {
     display: flex;
     flex-direction: column;
 }
