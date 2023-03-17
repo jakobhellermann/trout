@@ -171,6 +171,12 @@ body {
     animation: highlight 750ms ease-out;
 }
 
+@media (prefers-reduced-motion) {
+    .newSolution {
+        animation: none;
+    }
+}
+
 @keyframes highlight {
     0% {
         background-color: var(--highlight-color);
