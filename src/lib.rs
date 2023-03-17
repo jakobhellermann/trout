@@ -11,6 +11,7 @@ type Table = Vec<Vec<Length>>;
 pub fn parse_table(table: &str) -> Result<Table> {
     let table = table
         .lines()
+        .map(str::trim)
         .filter(|line| !line.is_empty())
         .map(|line| {
             let line = strip_around("[", "]", line)
@@ -21,7 +22,7 @@ pub fn parse_table(table: &str) -> Result<Table> {
                     ensure!(!val.is_empty(), "table contains empty rows");
                     val.trim()
                         .parse::<Length>()
-                        .map_err(|e| anyhow!("failed to parse '{val}' as integer: {e}"))
+                        .map_err(|e| anyhow!("failed to parse '{val}' as integer: {e} ('{line}')"))
                 })
                 .collect::<Result<Vec<_>>>()?;
 
