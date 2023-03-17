@@ -45,7 +45,7 @@ pub struct Stats {
     pub iterations: u32,
 }
 
-pub fn solve<F>(table: &[Vec<u32>], settings: SolverSettings, emit_solution: F) -> Stats
+pub fn solve<F>(table: &[Vec<u32>], settings: &SolverSettings, emit_solution: F) -> Stats
 where
     F: FnMut(&[NodeIdx], Time),
 {
@@ -119,7 +119,7 @@ where
 }
 
 struct SolverContext<'a, F> {
-    settings: SolverSettings,
+    settings: &'a SolverSettings,
     nodes: &'a [PlaceInfo],
 
     emit_solution: F,

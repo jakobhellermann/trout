@@ -16,25 +16,22 @@ fn solve_table(table: &str) -> Result<()> {
     #[cfg(feature = "heap_profiling")]
     let _profiler = dhat::Profiler::new_heap();
 
-    let stats = trout::solver::solve(
-        &table,
-        trout::solver::SolverSettings {
-            max_restarts: None,
-            only_required_restarts: true,
-            restart_penalty: 190,
-            deduplicate_solutions: false,
-        },
-        |solution, time| {
-            n_solutions += 1;
-            match fastest_solution {
-                None => fastest_solution = Some((solution.to_vec(), time)),
-                Some((_, prev_time)) if time < prev_time => {
-                    fastest_solution = Some((solution.to_vec(), time))
-                }
-                Some(_) => {}
+    let settings = trout::solver::SolverSettings {
+        max_restarts: Some(2),
+        only_required_restarts: true,
+        restart_penalty: 190,
+        deduplicate_solutions: false,
+    };
+    let stats = trout::solver::solve(&table, &settings, |solution, time| {
+        n_solutions += 1;
+        match fastest_solution {
+            None => fastest_solution = Some((solution.to_vec(), time)),
+            Some((_, prev_time)) if time < prev_time => {
+                fastest_solution = Some((solution.to_vec(), time))
             }
-        },
-    );
+            Some(_) => {}
+        }
+    });
     let duration = start.elapsed();
 
     if let Some((solution, time)) = fastest_solution {
@@ -44,6 +41,19 @@ fn solve_table(table: &str) -> Result<()> {
     println!("Routing took {:02}s", duration.as_secs_f32());
     println!("{} solutions", n_solutions);
     println!("Pathfind function called {} times.", stats.iterations);
+    println!("\n-- Settings used --");
+    println!(
+        "Only Dead End Restarts: {}",
+        settings.only_required_restarts
+    );
+    match settings.max_restarts {
+        Some(max_restarts) => {
+            println!("Max Restart Count: {}", max_restarts)
+        }
+        None => {
+            println!("Max Restart Count: -")
+        }
+    }
 
     Ok(())
 }
