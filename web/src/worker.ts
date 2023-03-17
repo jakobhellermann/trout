@@ -23,6 +23,7 @@ export type WorkerResponse = {
 export type Stats = {
     iterations: number;
     solutions: number;
+    cutBranches: number;
 };
 
 export type Params = {

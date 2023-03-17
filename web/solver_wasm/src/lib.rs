@@ -21,7 +21,9 @@ fn doit(
     let mut best_solutions = Vec::new();
 
     let stats = trout::solver::solve(&table, &settings, |solution, time| {
-        if time < previous_worst {
+        let is_windup = best_solutions.len() < max_solutions;
+
+        if time < previous_worst || is_windup {
             best_solutions.push((solution.to_vec(), time));
             best_solutions.sort_by_key(|&(_, time)| time);
             best_solutions.truncate(max_solutions);
@@ -35,6 +37,12 @@ fn doit(
                 .fold((std::u32::MAX, std::u32::MIN), |(min, max), &(_, time)| {
                     (min.min(time), max.max(time))
                 });
+        }
+
+        if is_windup {
+            u32::MAX
+        } else {
+            previous_worst
         }
     });
 
@@ -84,6 +92,7 @@ pub fn solve(
     let obj = js_sys::Object::new();
     js_sys::Reflect::set(&obj, &"iterations".into(), &stats.iterations.into()).unwrap();
     js_sys::Reflect::set(&obj, &"solutions".into(), &stats.solutions_found.into()).unwrap();
+    js_sys::Reflect::set(&obj, &"cutBranches".into(), &stats.cut_branches.into()).unwrap();
 
     Ok(obj)
 }

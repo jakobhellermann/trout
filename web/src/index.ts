@@ -140,7 +140,7 @@ solveBtn.addEventListener("click", () => {
             let end = Date.now();
 
             if (stats) {
-                let msg = `${stats.solutions} solutions found, ${stats.iterations} calls to pathfind function in ${formatDuration(end - start, true)} `;
+                let msg = `${stats.solutions} solutions found, ${stats.iterations} calls to pathfind function and ${stats.cutBranches} cut branches, in ${formatDuration(end - start, true)} `;
                 statsMessage.textContent = msg;
             } else {
                 statsMessage.textContent = "Code not fully loaded yet, try again later";
