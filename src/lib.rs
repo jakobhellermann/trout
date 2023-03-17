@@ -1,5 +1,5 @@
 pub mod solver;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Result};
 
 fn strip_around<'a>(prefix: &str, suffix: &str, input: &'a str) -> Option<&'a str> {
     input.strip_prefix(prefix)?.strip_suffix(suffix)
@@ -11,15 +11,17 @@ type Table = Vec<Vec<Length>>;
 pub fn parse_table(table: &str) -> Result<Table> {
     let table = table
         .lines()
+        .filter(|line| !line.is_empty())
         .map(|line| {
             let line = strip_around("[", "]", line)
-                .ok_or_else(|| anyhow!("table doesn't contain arrays"))?;
+                .ok_or_else(|| anyhow!("line is not an array: '{line}'"))?;
             let connections = line
                 .split(',')
                 .map(|val| {
+                    ensure!(!val.is_empty(), "table contains empty rows");
                     val.trim()
                         .parse::<Length>()
-                        .map_err(|e| anyhow!("failed to parse int: {e}"))
+                        .map_err(|e| anyhow!("failed to parse '{val}' as integer: {e}"))
                 })
                 .collect::<Result<Vec<_>>>()?;
 
@@ -27,9 +29,15 @@ pub fn parse_table(table: &str) -> Result<Table> {
         })
         .collect::<Result<Vec<_>>>()?;
 
-    let length = table.get(0).ok_or_else(|| anyhow!("no table data"))?.len();
-    if table[1..].iter().any(|row| row.len() != length) {
-        anyhow::bail!("not every table row has the same length (expected {length})");
+    let length = table.get(0).ok_or_else(|| anyhow!("table is empty"))?.len();
+
+    for row in &table[1..] {
+        if row.len() != length {
+            anyhow::bail!(
+                "not every table row has the same length (expected {length}, got {})",
+                row.len()
+            );
+        }
     }
 
     Ok(table)

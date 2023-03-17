@@ -2,11 +2,11 @@
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::path::PathBuf;
 
 fn solve_table(table: &str) -> Result<()> {
-    let table = trout::parse_table(&table)?;
+    let table = trout::parse_table(&table).context("could not parse table")?;
 
     let start = std::time::Instant::now();
 

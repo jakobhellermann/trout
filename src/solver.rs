@@ -31,6 +31,7 @@ impl PlaceInfo {
     }
 }
 
+#[derive(Debug)]
 pub struct SolverSettings {
     pub max_restarts: Option<u32>,
     pub only_required_restarts: bool,
