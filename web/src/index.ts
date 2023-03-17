@@ -31,6 +31,7 @@ let solveBtn = document.getElementById("solveBtn")!;
 let outputList = document.getElementById("outputList")!;
 let loadingIndicator = document.getElementById("loadingIndicator")!;
 let errorMessage = document.getElementById("errorMessage")!;
+let statsMessage = document.getElementById("statsMessage")!;
 
 let inputTimeTable = document.getElementById("timeTable") as HTMLTextAreaElement;
 let inputNSolutions = document.getElementById("nSolutions") as HTMLInputElement;
@@ -112,6 +113,14 @@ solveBtn.addEventListener("click", () => {
         .catch((error: Error) => {
             errorMessage.textContent = `Error: ${error.message}`;
             console.error(error);
+        })
+        .then(stats => {
+            if (stats) {
+                let msg = `${stats.solutions} solutions found, ${stats.iterations} calls to pathfind function`;
+                statsMessage.textContent = msg;
+            } else {
+                statsMessage.textContent = "Code not fully loaded yet, try again later";
+            }
         })
         .finally(() => {
             setSpinning(false);

@@ -41,5 +41,5 @@ cargo build --release
 # todo
 
 - [ ] suggest potential files to look at
-- [ ] show more details in website (how many solution were found, how long it took)
+- [x] show more details in website (how many solution were found, how long it took)
 - [ ] fix configurable restart penalty

@@ -40,6 +40,7 @@ pub struct SolverSettings {
 
 pub struct Stats {
     pub iterations: u32,
+    pub solutions_found: u32,
 }
 
 pub fn solve<F>(table: &[Vec<u32>], settings: &SolverSettings, emit_solution: F) -> Stats
@@ -94,6 +95,7 @@ where
     let mut cx = SolverContext {
         settings,
         n,
+        solutions_found: 0,
         emit_solution,
         start,
         finish,
@@ -108,6 +110,7 @@ where
     cx.path_find(start);
 
     let stats = Stats {
+        solutions_found: cx.solutions_found,
         iterations: cx.iterations,
     };
 
@@ -118,6 +121,7 @@ struct SolverContext<'a, F> {
     settings: &'a SolverSettings,
     nodes: &'a [PlaceInfo],
 
+    solutions_found: u32,
     emit_solution: F,
 
     n: usize,
@@ -151,6 +155,8 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
     }
 
     fn emit_solution(&mut self) {
+        self.solutions_found += 1;
+
         let solution = &self.trail[0..self.index + 1];
         let time: Time = solution
             .windows(2)

@@ -13,7 +13,7 @@ fn doit(
     settings: SolverSettings,
     max_solutions: usize,
     update_solutions: impl Fn(&[usize], u32, usize),
-) -> Result<(), anyhow::Error> {
+) -> Result<trout::solver::Stats, anyhow::Error> {
     let table = trout::parse_table(table)?;
 
     let mut previous_best = u32::MAX;
@@ -21,7 +21,7 @@ fn doit(
     let mut best_solutions = Vec::new();
 
     let mut i = 0;
-    trout::solver::solve(&table, &settings, |solution, time| {
+    let stats = trout::solver::solve(&table, &settings, |solution, time| {
         if time < previous_worst {
             i += 1;
 
@@ -45,7 +45,7 @@ fn doit(
         }
     });
 
-    Ok(())
+    Ok(stats)
 }
 
 #[wasm_bindgen]
@@ -56,7 +56,7 @@ pub fn solve(
     only_required_restarts: bool,
     restart_penalty: u32,
     callback: &js_sys::Function,
-) -> Result<(), String> {
+) -> Result<js_sys::Object, String> {
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
     let settings = trout::solver::SolverSettings {
@@ -67,7 +67,7 @@ pub fn solve(
 
     log(&format!("{:?}", settings));
 
-    doit(
+    let stats = doit(
         &table,
         settings,
         max_solutions,
@@ -86,5 +86,11 @@ pub fn solve(
             );
         },
     )
-    .map_err(|e| format!("{:?}", e))
+    .map_err(|e| format!("{:?}", e))?;
+
+    let obj = js_sys::Object::new();
+    js_sys::Reflect::set(&obj, &"iterations".into(), &stats.iterations.into()).unwrap();
+    js_sys::Reflect::set(&obj, &"solutions".into(), &stats.solutions_found.into()).unwrap();
+
+    Ok(obj)
 }

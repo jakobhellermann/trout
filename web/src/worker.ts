@@ -17,6 +17,12 @@ export type WorkerResponse = {
     error: Error,
 } | {
     eventType: "FINISH";
+    stats: Stats,
+};
+
+export type Stats = {
+    iterations: number;
+    solutions: number;
 };
 
 export type Params = {
@@ -39,7 +45,7 @@ self.addEventListener("message", (message: MessageEvent<WorkerRequest>) => {
         let { table, maxSolutions, maxRestarts, onlyRequiredRestarts, restartPenalty } = message.data.params;
 
         try {
-            solve(table, maxSolutions, maxRestarts, onlyRequiredRestarts, restartPenalty, (time: number, route: number[], updatedIndex: number) => {
+            let stats = solve(table, maxSolutions, maxRestarts, onlyRequiredRestarts, restartPenalty, (time: number, route: number[], updatedIndex: number) => {
                 post({
                     eventType: "EMIT",
                     solution: {
@@ -47,9 +53,10 @@ self.addEventListener("message", (message: MessageEvent<WorkerRequest>) => {
                     },
                     updatedIndex,
                 });
-            });
+            }) as Stats;
             post({
                 eventType: "FINISH",
+                stats,
             });
         } catch (error) {
             post({

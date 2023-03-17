@@ -1,4 +1,4 @@
-import type { Params, Solution, WorkerRequest, WorkerResponse } from "./worker";
+import type { Params, Solution, Stats, WorkerRequest, WorkerResponse } from "./worker";
 
 let onSolutionCallback: (solution: Solution, updatedIndex: number) => void;
 export function setOnSolutions(onSolution: (solution: Solution, updatedIndex: number) => void) {
@@ -47,7 +47,7 @@ let loadWorker = () => createInitializedWorker().then(worker => {
     };
 });
 
-let onFinish = () => { };
+let onFinish = (stats: Stats) => { };
 let onError: (error: Error) => void = (e) => { };
 
 function workerHandler(message: MessageEvent<WorkerResponse>) {
@@ -60,16 +60,16 @@ function workerHandler(message: MessageEvent<WorkerResponse>) {
     } else if (message.data.eventType == "FINISH") {
         console.timeEnd("solve");
         workerState.running = false;
-        onFinish();
+        onFinish(message.data.stats);
     }
 }
 
 loadWorker();
 
-export function solve(params: Params): Promise<void> {
+export function solve(params: Params): Promise<Stats | undefined> {
     if (!workerState.initialized) {
         console.warn("attempted to solve before initialization");
-        return Promise.resolve();
+        return Promise.resolve(undefined);
     }
 
     if (workerState.running) {
