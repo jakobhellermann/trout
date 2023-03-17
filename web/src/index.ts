@@ -57,7 +57,7 @@ let setSpinning = (active: boolean) => loadingIndicator.classList.toggle("disabl
 
 function createSolutionLi(solution: Solution) {
     let timeEl = document.createElement("span");
-    timeEl.textContent = `47.220 (${solution.time}) with`;
+    timeEl.textContent = `${formatDuration(solution.time * 17, true)} (${solution.time}) with`;
     let routeEl = document.createElement("code");
     routeEl.textContent = solution.route.join(", ");
 
@@ -92,9 +92,29 @@ setOnSolutions((solution, updatedIndex) => {
     truncateChildren(outputList, nSolutions);
 });
 
+function formatDuration(millis: number, alwaysIncludeMinutes?: boolean) {
+    let ms = millis % 1000;
+    millis = (millis - ms) / 1000;
+    let secs = millis % 60;
+    millis = (millis - secs) / 60;
+    let mins = millis % 60;
+    let hrs = (millis - mins) / 60;
+
+    let str = `${secs.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
+    if (alwaysIncludeMinutes || mins != 0) {
+        str = `${mins.toString().padStart(2, "0")}:${str}`;
+    }
+    if (hrs != 0) {
+        str = `${hrs.toString().padStart(2, "0")}:${str}`;
+    }
+
+    return str;
+}
+
 solveBtn.addEventListener("click", () => {
     setSpinning(true);
 
+    statsMessage.textContent = "";
     errorMessage.textContent = "";
 
     let table = inputTimeTable.value;
@@ -103,6 +123,7 @@ solveBtn.addEventListener("click", () => {
     let onlyRequiredRestarts = inputOnlyRequiredRestarts.checked;
     let restartPenalty = Number(inputRestartPenalty);
 
+    let start = Date.now();
     solve({
         table,
         maxSolutions,
@@ -115,8 +136,10 @@ solveBtn.addEventListener("click", () => {
             console.error(error);
         })
         .then(stats => {
+            let end = Date.now();
+
             if (stats) {
-                let msg = `${stats.solutions} solutions found, ${stats.iterations} calls to pathfind function`;
+                let msg = `${stats.solutions} solutions found, ${stats.iterations} calls to pathfind function in ${formatDuration(end - start, true)} `;
                 statsMessage.textContent = msg;
             } else {
                 statsMessage.textContent = "Code not fully loaded yet, try again later";
