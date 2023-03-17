@@ -12,7 +12,7 @@ fn doit(
     table: &str,
     settings: SolverSettings,
     max_solutions: usize,
-    update_solutions: impl Fn(&[(Vec<usize>, u32)]),
+    update_solutions: impl Fn(&[usize], u32, usize),
 ) -> Result<(), anyhow::Error> {
     let table = trout::parse_table(table)?;
 
@@ -29,7 +29,9 @@ fn doit(
             best_solutions.sort_by_key(|&(_, time)| time);
             best_solutions.truncate(max_solutions);
 
-            update_solutions(&best_solutions);
+            let updated_index = best_solutions.iter().position(|&(_, t)| t == time).unwrap();
+
+            update_solutions(&solution, time, updated_index);
 
             (previous_best, previous_worst) = best_solutions
                 .iter()
@@ -65,24 +67,24 @@ pub fn solve(
 
     log(&format!("{:?}", settings));
 
-    doit(&table, settings, max_solutions, |new_solutions| {
-        let new_solutions: Array = new_solutions
-            .iter()
-            .map(|(solution, time)| {
-                let route = solution
-                    .iter()
-                    .copied()
-                    .map(JsValue::from)
-                    .collect::<Array>();
+    doit(
+        &table,
+        settings,
+        max_solutions,
+        |solution, time, updated_index| {
+            let route = solution
+                .iter()
+                .copied()
+                .map(JsValue::from)
+                .collect::<Array>();
 
-                let obj = js_sys::Object::new();
-                js_sys::Reflect::set(&obj, &"time".into(), &JsValue::from(*time)).unwrap();
-                js_sys::Reflect::set(&obj, &"route".into(), &route.into()).unwrap();
-
-                JsValue::from(obj)
-            })
-            .collect();
-        let _ = callback.call1(&JsValue::NULL, &new_solutions);
-    })
+            let _ = callback.call3(
+                &JsValue::NULL,
+                &time.into(),
+                &route.into(),
+                &updated_index.into(),
+            );
+        },
+    )
     .map_err(|e| format!("{:?}", e))
 }

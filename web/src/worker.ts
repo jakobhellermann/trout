@@ -10,7 +10,8 @@ export type WorkerResponse = {
     eventType: "INITIALIZED";
 } | {
     eventType: "EMIT",
-    solutions: Solution[];
+    solution: Solution;
+    updatedIndex: number,
 } | {
     eventType: "ERROR",
     error: Error,
@@ -38,10 +39,13 @@ self.addEventListener("message", (message: MessageEvent<WorkerRequest>) => {
         let { table, maxSolutions, maxRestarts, onlyRequiredRestarts, restartPenalty } = message.data.params;
 
         try {
-            solve(table, maxSolutions, maxRestarts, onlyRequiredRestarts, restartPenalty, (newSolutions: Solution[]) => {
+            solve(table, maxSolutions, maxRestarts, onlyRequiredRestarts, restartPenalty, (time: number, route: number[], updatedIndex: number) => {
                 post({
                     eventType: "EMIT",
-                    solutions: newSolutions,
+                    solution: {
+                        time, route
+                    },
+                    updatedIndex,
                 });
             });
             post({

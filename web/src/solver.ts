@@ -1,7 +1,7 @@
 import type { Params, Solution, WorkerRequest, WorkerResponse } from "./worker";
 
-let onSolutionCallback: (solutions: Solution[]) => void;
-export function setOnSolutions(onSolution: (solutions: Solution[]) => void) {
+let onSolutionCallback: (solution: Solution, updatedIndex: number) => void;
+export function setOnSolutions(onSolution: (solution: Solution, updatedIndex: number) => void) {
     onSolutionCallback = onSolution;
 }
 
@@ -54,7 +54,7 @@ function workerHandler(message: MessageEvent<WorkerResponse>) {
     if (message.data.eventType == "INITIALIZED") {
         throw new Error("double initialization");
     } else if (message.data.eventType == "EMIT") {
-        onSolutionCallback(message.data.solutions);
+        onSolutionCallback(message.data.solution, message.data.updatedIndex);
     } else if (message.data.eventType == "ERROR") {
         onError(message.data.error);
     } else if (message.data.eventType == "FINISH") {

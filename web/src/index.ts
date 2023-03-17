@@ -1,4 +1,5 @@
 import { solve, setOnSolutions } from "./solver";
+import type { Solution } from "./worker";
 
 let BEGINNER_TABLE = `[0,169,60000,60000,60000,60000,60000,60000,284,235,60000,196,60000,60000,60000,60000,60000,60000,60000,60000,60000,60000,60000]
 [190,0,257,330,60000,60000,60000,60000,306,255,60000,240,60000,60000,60000,60000,60000,60000,60000,60000,60000,60000,60000]
@@ -53,19 +54,41 @@ inputTimeTable.addEventListener("keypress", (e) => {
 
 let setSpinning = (active: boolean) => loadingIndicator.classList.toggle("disabled", !active);
 
-setOnSolutions((solutions) => {
-    let solutionElements = solutions.map(({ time, route }) => {
-        let timeEl = document.createElement("span");
-        timeEl.textContent = `47.220 (${time}) with`;
-        let routeEl = document.createElement("code");
-        routeEl.textContent = route.join(", ");
+function createSolutionLi(solution: Solution) {
+    let timeEl = document.createElement("span");
+    timeEl.textContent = `47.220 (${solution.time}) with`;
+    let routeEl = document.createElement("code");
+    routeEl.textContent = solution.route.join(", ");
 
-        let li = document.createElement("li");
-        li.replaceChildren(timeEl, " ", routeEl);
+    let li = document.createElement("li");
+    li.className = "newSolution";
+    li.replaceChildren(timeEl, " ", routeEl);
 
-        return li;
-    });
-    outputList.replaceChildren(...solutionElements);
+    return li;
+}
+
+
+function truncateChildren(element: Element, length: number) {
+    while (element.childElementCount > length) {
+        element.removeChild(element.lastChild!);
+    }
+}
+
+function insertChildAt(parent: Element, child: Element, index: number) {
+    if (index >= parent.childElementCount) {
+        parent.appendChild(child);
+    } else {
+        outputList.insertBefore(child, parent.children[index]);
+    }
+
+}
+
+setOnSolutions((solution, updatedIndex) => {
+    let nSolutions = Number(inputNSolutions.value);
+
+    let li = createSolutionLi(solution);
+    insertChildAt(outputList, li, updatedIndex);
+    truncateChildren(outputList, nSolutions);
 });
 
 solveBtn.addEventListener("click", () => {

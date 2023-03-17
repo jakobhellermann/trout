@@ -86,3 +86,18 @@ body {
         transform: rotate(360deg);
     }
 }
+
+.newSolution {
+    border-radius: 3px;
+    animation: highlight 1000ms ease-out;
+}
+
+@keyframes highlight {
+    0% {
+        background-color: rgb(189, 245, 255);
+    }
+
+    100% {
+        background-color: white;
+    }
+}
