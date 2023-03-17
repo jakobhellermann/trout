@@ -3,6 +3,12 @@ body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+.left {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
 #settings {
     display: grid;
     grid-template-columns: max-content max-content;
@@ -26,6 +32,15 @@ body {
     grid-column-end: 3;
 }
 
+.left .links {
+    display: flex;
+    flex-direction: column;
+}
+
+.links a {
+    text-decoration: none;
+    color: rgb(105, 105, 194);
+}
 
 .main {
     display: flex;
