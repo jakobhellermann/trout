@@ -2,6 +2,12 @@ use js_sys::Array;
 use trout::solver::SolverSettings;
 use wasm_bindgen::prelude::*;
 
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
 fn doit(
     table: &str,
     settings: SolverSettings,
@@ -56,6 +62,8 @@ pub fn solve(
         only_required_restarts,
         restart_penalty,
     };
+
+    log(&format!("{:?}", settings));
 
     doit(&table, settings, max_solutions, |new_solutions| {
         let new_solutions: Array = new_solutions

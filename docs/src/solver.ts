@@ -3,7 +3,6 @@ import type { Params, Solution, WorkerRequest, WorkerResponse } from "./worker";
 let onSolutionCallback: (solutions: Solution[]) => void;
 export function setOnSolutions(onSolution: (solutions: Solution[]) => void) {
     onSolutionCallback = onSolution;
-
 }
 
 type WorkerState = {
@@ -39,6 +38,7 @@ function createInitializedWorker(): Promise<Worker> {
     });
 }
 let loadWorker = () => createInitializedWorker().then(worker => {
+    worker.addEventListener("error", (e) => onError(new Error(e.message)));
     worker.addEventListener("message", workerHandler);
     workerState = {
         initialized: true,
@@ -47,34 +47,38 @@ let loadWorker = () => createInitializedWorker().then(worker => {
     };
 });
 
+let onFinish = () => { };
+let onError: (error: Error) => void = (e) => { };
+
 function workerHandler(message: MessageEvent<WorkerResponse>) {
     if (message.data.eventType == "INITIALIZED") {
         throw new Error("double initialization");
     } else if (message.data.eventType == "EMIT") {
         onSolutionCallback(message.data.solutions);
+    } else if (message.data.eventType == "ERROR") {
+        onError(message.data.error);
     } else if (message.data.eventType == "FINISH") {
         console.timeEnd("solve");
         workerState.running = false;
+        onFinish();
     }
 }
 
 loadWorker();
 
-
-export function solve(params: Params) {
+export function solve(params: Params): Promise<void> {
     if (!workerState.initialized) {
         console.warn("attempted to solve before initialization");
-        return;
+        return Promise.resolve();
     }
 
     if (workerState.running) {
         console.warn("terminating worker for new request");
         console.timeEnd("solve");
         workerState.worker.terminate();
-        loadWorker().then(() => {
-            solve(params);
+        return loadWorker().then(() => {
+            return solve(params);
         });
-        return;
     }
 
     console.time("solve");
@@ -84,4 +88,9 @@ export function solve(params: Params) {
         params,
     };
     workerState.worker.postMessage(message);
+
+    return new Promise((resolve, reject) => {
+        onFinish = resolve;
+        onError = reject;
+    });
 }

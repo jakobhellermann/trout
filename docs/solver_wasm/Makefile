@@ -1,4 +1,4 @@
-out/solver_wasm.js: out/solver_wasm.wasm
+out/solver_wasm.js: out/solver_wasm.wasm ../../src/lib.rs ../../src/solver.rs
 	wasm-bindgen --out-dir out out/solver_wasm.wasm --target web
 	wasm-opt out/solver_wasm_bg.wasm -o out/solver_wasm_bg.wasm -O2
 

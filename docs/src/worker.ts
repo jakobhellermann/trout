@@ -12,6 +12,9 @@ export type WorkerResponse = {
     eventType: "EMIT",
     solutions: Solution[];
 } | {
+    eventType: "ERROR",
+    error: Error,
+} | {
     eventType: "FINISH";
 };
 
@@ -34,14 +37,21 @@ self.addEventListener("message", (message: MessageEvent<WorkerRequest>) => {
     } else if (message.data.eventType == "CALL") {
         let { table, maxSolutions, maxRestarts, onlyRequiredRestarts, restartPenalty } = message.data.params;
 
-        solve(table, maxSolutions, maxRestarts, onlyRequiredRestarts, restartPenalty, (newSolutions: Solution[]) => {
-            post({
-                eventType: "EMIT",
-                solutions: newSolutions,
+        try {
+            solve(table, maxSolutions, maxRestarts, onlyRequiredRestarts, restartPenalty, (newSolutions: Solution[]) => {
+                post({
+                    eventType: "EMIT",
+                    solutions: newSolutions,
+                });
             });
-        });
-        post({
-            eventType: "FINISH",
-        });
+            post({
+                eventType: "FINISH",
+            });
+        } catch (error) {
+            post({
+                eventType: "ERROR",
+                error: new Error(error),
+            });
+        }
     }
 });

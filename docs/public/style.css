@@ -1,17 +1,73 @@
-#inputs {
-    width: 50%;
+body {
+    margin: 0.5rem;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-#output {
-    width: 50%;
+#settings {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    gap: 5px;
+
+
+    align-items: center;
+}
+
+#settings label {
+    text-align: right;
+}
+
+#settings #onlyRequiredRestarts {
+    justify-self: start;
+}
+
+#settings #solveBtn {
+    margin-top: 1rem;
+    grid-column-start: 1;
+    grid-column-end: 3;
+}
+
+
+.main {
     display: flex;
-    flex-direction: column;
+    height: calc(100vh - 1rem);
 }
 
-#main {
-    display: flex;
+.main hr {
+    margin: 0 1rem;
 }
 
-#timeTable {
-    display: block;
+.output {
+    margin-left: 2rem;
+}
+
+#outputList {
+    padding: 0;
+    list-style-type: decimal;
+}
+
+#errorMessage {
+    color: red;
+}
+
+.spinner {
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 2s linear infinite;
+}
+
+.disabled {
+    display: none;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

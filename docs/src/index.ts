@@ -27,17 +27,63 @@ let BEGINNER_TABLE = `[0,169,60000,60000,60000,60000,60000,60000,284,235,60000,1
 
 
 let solveBtn = document.getElementById("solveBtn")!;
+let outputList = document.getElementById("outputList")!;
+let loadingIndicator = document.getElementById("loadingIndicator")!;
+let errorMessage = document.getElementById("errorMessage")!;
+
+let inputTimeTable = document.getElementById("timeTable") as HTMLTextAreaElement;
+let inputNSolutions = document.getElementById("nSolutions") as HTMLInputElement;
+let inputMaxRestarts = document.getElementById("maxRestarts") as HTMLInputElement;
+let inputOnlyRequiredRestarts = document.getElementById("onlyRequiredRestarts") as HTMLInputElement;
+let inputRestartPenalty = document.getElementById("restartPenalty") as HTMLInputElement;
+
+inputTimeTable.addEventListener("keypress", (e) => {
+    if (e.key === "Enter" && e.ctrlKey) {
+        e.preventDefault();
+        solveBtn.click();
+    }
+});
+
+let setSpinning = (active: boolean) => loadingIndicator.classList.toggle("disabled", !active);
 
 setOnSolutions((solutions) => {
-    console.log(solutions[0].time);
+    let solutionElements = solutions.map(({ time, route }) => {
+        let timeEl = document.createElement("span");
+        timeEl.textContent = `47.220 (${time}) with`;
+        let routeEl = document.createElement("code");
+        routeEl.textContent = route.join(", ");
+
+        let li = document.createElement("li");
+        li.replaceChildren(timeEl, " ", routeEl);
+
+        return li;
+    });
+    outputList.replaceChildren(...solutionElements);
 });
 
 solveBtn.addEventListener("click", () => {
+    setSpinning(true);
+
+    errorMessage.textContent = "";
+
+    let table = inputTimeTable.value;
+    let maxSolutions = Number(inputNSolutions.value);
+    let maxRestarts = inputMaxRestarts.value !== "" ? Number(inputMaxRestarts.value) : undefined;
+    let onlyRequiredRestarts = inputOnlyRequiredRestarts.checked;
+    let restartPenalty = Number(inputRestartPenalty);
+
     solve({
-        table: BEGINNER_TABLE,
-        maxSolutions: 5,
-        maxRestarts: 1,
-        onlyRequiredRestarts: false,
-        restartPenalty: 190,
-    });
+        table,
+        maxSolutions,
+        maxRestarts,
+        onlyRequiredRestarts,
+        restartPenalty,
+    })
+        .catch((error: Error) => {
+            errorMessage.textContent = `Error: ${error.message}`;
+            console.error(error);
+        })
+        .finally(() => {
+            setSpinning(false);
+        });
 });
