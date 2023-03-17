@@ -82,6 +82,7 @@ function formatDuration(millis: number, alwaysIncludeMinutes?: boolean) {
 solveBtn.addEventListener("click", () => {
     setSpinning(true);
 
+    outputList.replaceChildren();
     statsMessage.textContent = "";
     errorMessage.textContent = "";
 
@@ -100,10 +101,6 @@ solveBtn.addEventListener("click", () => {
         onlyRequiredRestarts,
         restartPenalty,
     })
-        .catch((error: Error) => {
-            errorMessage.textContent = `Error: ${error.message}`;
-            console.error(error);
-        })
         .then(stats => {
             let end = Date.now();
 
@@ -113,6 +110,10 @@ solveBtn.addEventListener("click", () => {
             } else {
                 statsMessage.textContent = "Code not fully loaded yet, try again later";
             }
+        })
+        .catch((error: Error) => {
+            errorMessage.textContent = `Error: ${error.message}`;
+            console.error(error);
         })
         .finally(() => {
             setSpinning(false);
