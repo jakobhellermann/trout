@@ -122,7 +122,8 @@ solveBtn.addEventListener("click", () => {
     let maxSolutions = Number(inputNSolutions.value);
     let maxRestarts = inputMaxRestarts.value !== "" ? Number(inputMaxRestarts.value) : undefined;
     let onlyRequiredRestarts = inputOnlyRequiredRestarts.checked;
-    let restartPenalty = Number(inputRestartPenalty);
+    // let restartPenalty = Number(inputRestartPenalty.value);
+    let restartPenalty = 190;
 
     let start = Date.now();
     solve({
