@@ -20,6 +20,8 @@ Routing took 0.6383271s
 Pathfind function called 66641736 times.
 ```
 
+Or use the website at [https://jakobhellermann.github.io/trout](https://jakobhellermann.github.io/trout).
+
 # development
 
 ## building from source
@@ -38,5 +40,6 @@ cargo build --release
 
 # todo
 
-- [ ] show top n solutions
 - [ ] suggest potential files to look at
+- [ ] show more details in website (how many solution were found, how long it took)
+- [ ] fix configurable restart penalty
