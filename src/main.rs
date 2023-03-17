@@ -10,36 +10,45 @@ fn solve_table(table: &str) -> Result<()> {
 
     let start = std::time::Instant::now();
 
-    let mut n_solutions = 0;
-    let mut fastest_solution = None;
+    let max_solutions = 100;
+
+    let mut previous_best = u32::MAX;
+    let mut previous_worst = u32::MAX;
+    let mut best_solutions: Vec<(Vec<usize>, u32)> = Vec::new();
 
     #[cfg(feature = "heap_profiling")]
     let _profiler = dhat::Profiler::new_heap();
 
     let settings = trout::solver::SolverSettings {
-        max_restarts: Some(2),
-        only_required_restarts: true,
+        max_restarts: None,
+        only_required_restarts: false,
         restart_penalty: 190,
     };
     let stats = trout::solver::solve(&table, &settings, |solution, time| {
-        n_solutions += 1;
-        match fastest_solution {
-            None => fastest_solution = Some((solution.to_vec(), time)),
-            Some((_, prev_time)) if time < prev_time => {
-                fastest_solution = Some((solution.to_vec(), time))
-            }
-            Some(_) => {}
+        if time < previous_worst {
+            best_solutions.push((solution.to_vec(), time));
+            best_solutions.sort_by_key(|&(_, time)| time);
+            best_solutions.truncate(max_solutions);
+
+            (previous_best, previous_worst) = best_solutions
+                .iter()
+                .fold((std::u32::MAX, std::u32::MIN), |(min, max), &(_, time)| {
+                    (min.min(time), max.max(time))
+                });
         }
+
+        previous_worst
     });
     let duration = start.elapsed();
 
-    if let Some((solution, time)) = fastest_solution {
-        println!("{:?} - {}", solution, time);
+    for (route, time) in best_solutions[0..5].iter().rev() {
+        println!("{:?} - {}", route, time);
     }
 
     println!("Routing took {:02}s", duration.as_secs_f32());
-    println!("{} solutions", n_solutions);
+    println!("{} solutions", stats.solutions_found);
     println!("Pathfind function called {} times.", stats.iterations);
+    println!("Branches cut: {}", stats.cut_branches);
     println!("\n-- Settings used --");
     println!(
         "Only Dead End Restarts: {}",

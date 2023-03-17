@@ -41,11 +41,13 @@ pub struct SolverSettings {
 pub struct Stats {
     pub iterations: u32,
     pub solutions_found: u32,
+    pub cut_branches: u32,
 }
 
+/// `R` gets called for each new solution, and returns the worst new interesting time
 pub fn solve<F>(table: &[Vec<u32>], settings: &SolverSettings, emit_solution: F) -> Stats
 where
-    F: FnMut(&[NodeIdx], Time),
+    F: FnMut(&[NodeIdx], Time) -> Time,
 {
     let n = table[0].len();
 
@@ -92,9 +94,23 @@ where
     let start = 0;
     let finish = n - 1;
 
+    let mut lowest_times = vec![Time::MAX; n];
+    lowest_times[0] = 0;
+    for node in &nodes {
+        for (&target, &time) in node.targets.iter().zip(node.times.iter()) {
+            lowest_times[target] = lowest_times[target].min(time);
+        }
+    }
+
+    let global_lower_bound: Time = lowest_times.iter().sum();
+
     let mut cx = SolverContext {
         settings,
         n,
+        local_lower_bound: global_lower_bound,
+        cut_branches: 0,
+        lowest_times,
+        worst_time_of_interest: std::u32::MAX,
         solutions_found: 0,
         emit_solution,
         start,
@@ -112,6 +128,7 @@ where
     let stats = Stats {
         solutions_found: cx.solutions_found,
         iterations: cx.iterations,
+        cut_branches: cx.cut_branches,
     };
 
     stats
@@ -120,6 +137,11 @@ where
 struct SolverContext<'a, F> {
     settings: &'a SolverSettings,
     nodes: &'a [PlaceInfo],
+
+    local_lower_bound: Time,
+    cut_branches: u32,
+    lowest_times: Vec<Time>,
+    worst_time_of_interest: Time,
 
     solutions_found: u32,
     emit_solution: F,
@@ -138,7 +160,10 @@ struct SolverContext<'a, F> {
     trail: Vec<NodeIdx>,
 }
 
-impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
+impl<F> SolverContext<'_, F>
+where
+    F: FnMut(&[NodeIdx], Time) -> Time,
+{
     fn can_restart(&self, pos: NodeIdx, must: bool) -> bool {
         if self.settings.only_required_restarts && !must {
             return false;
@@ -172,7 +197,7 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
             })
             .sum();
 
-        (self.emit_solution)(solution, time);
+        self.worst_time_of_interest = (self.emit_solution)(solution, time);
     }
 
     fn path_find(&mut self, pos: NodeIdx) {
@@ -185,6 +210,22 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
             }
             return;
         }
+
+        if self.local_lower_bound >= self.worst_time_of_interest {
+            self.cut_branches += 1;
+            return;
+        }
+
+        let added_time = if self.index == 0 {
+            0
+        } else {
+            if self.trail[self.index] == self.start {
+                self.settings.restart_penalty
+            } else {
+                self.nodes[self.trail[self.index - 1]].frames_to(self.trail[self.index])
+            }
+        };
+        let update_lower_bound = added_time - self.lowest_times[pos];
 
         let targets = &self.nodes[pos].targets;
 
@@ -210,9 +251,11 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
             self.visit_count += 1;
             self.index += 1;
             self.can_go[dead_end] = false;
+            self.local_lower_bound += update_lower_bound;
 
             self.path_find(dead_end);
 
+            self.local_lower_bound -= update_lower_bound;
             self.visit_count -= 1;
             self.index -= 1;
             self.can_go[dead_end] = true;
@@ -225,9 +268,11 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
                 self.visit_count += 1;
                 self.index += 1;
                 self.can_go[target] = false;
+                self.local_lower_bound += update_lower_bound;
 
                 self.path_find(target);
 
+                self.local_lower_bound -= update_lower_bound;
                 self.visit_count -= 1;
                 self.index -= 1;
                 self.can_go[target] = true;
@@ -239,7 +284,11 @@ impl<F: FnMut(&[NodeIdx], Time)> SolverContext<'_, F> {
         if self.can_restart(pos, must_restart) {
             self.index += 1;
             self.restart_count += 1;
+            self.local_lower_bound += update_lower_bound;
+
             self.path_find(self.start);
+
+            self.local_lower_bound -= update_lower_bound;
             self.restart_count -= 1;
             self.index -= 1;
         }
