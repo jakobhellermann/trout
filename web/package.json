@@ -6,6 +6,12 @@
     "start": "parcel",
     "build": "parcel build"
   },
+  "targets": {
+    "default": {
+      "distDir": "../pages",
+      "publicUrl": "/trout"
+    }
+  },
   "keywords": [],
   "author": "",
   "license": "MIT",
