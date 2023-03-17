@@ -168,7 +168,7 @@ body {
 
 .newSolution {
     border-radius: 3px;
-    animation: highlight 1000ms ease-out;
+    animation: highlight 750ms ease-out;
 }
 
 @keyframes highlight {
