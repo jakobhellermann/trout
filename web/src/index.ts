@@ -37,6 +37,13 @@ let inputMaxRestarts = document.getElementById("maxRestarts") as HTMLInputElemen
 let inputOnlyRequiredRestarts = document.getElementById("onlyRequiredRestarts") as HTMLInputElement;
 let inputRestartPenalty = document.getElementById("restartPenalty") as HTMLInputElement;
 
+
+inputOnlyRequiredRestarts.addEventListener("change", () => {
+    if (!inputOnlyRequiredRestarts.checked && inputMaxRestarts.value === "") {
+        inputMaxRestarts.value = "2";
+    }
+});
+
 inputTimeTable.addEventListener("keypress", (e) => {
     if (e.key === "Enter" && e.ctrlKey) {
         e.preventDefault();
