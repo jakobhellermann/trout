@@ -20,12 +20,15 @@ fn solve_table(table: &str) -> Result<()> {
     let _profiler = dhat::Profiler::new_heap();
 
     let settings = trout::solver::SolverSettings {
-        max_restarts: None,
-        only_required_restarts: false,
+        max_restarts: Some(1),
+        only_required_restarts: true,
         restart_penalty: 190,
     };
     let stats = trout::solver::solve(&table, &settings, |solution, time| {
-        if time < previous_worst {
+        // perfect compat with c# solver: accept every solution (even if obsolete) and return high worst interested time
+        let is_windup = best_solutions.len() < max_solutions;
+
+        if time < previous_worst || is_windup {
             best_solutions.push((solution.to_vec(), time));
             best_solutions.sort_by_key(|&(_, time)| time);
             best_solutions.truncate(max_solutions);
@@ -37,7 +40,11 @@ fn solve_table(table: &str) -> Result<()> {
                 });
         }
 
-        previous_worst
+        if is_windup {
+            u32::MAX
+        } else {
+            previous_worst
+        }
     });
     let duration = start.elapsed();
 
