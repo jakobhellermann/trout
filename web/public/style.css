@@ -146,6 +146,7 @@ body {
     list-style-type: decimal;
 
     counter-reset: list;
+    position: relative;
 }
 
 #outputList li {
@@ -157,6 +158,10 @@ body {
     content: counter(list, decimal) ") ";
     color: var(--rank-color);
     counter-increment: list;
+    position: absolute;
+
+    left: -2em;
+    text-align: right;
 }
 
 #outputList :not(:first-child) {
