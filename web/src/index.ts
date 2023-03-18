@@ -33,17 +33,18 @@ function createSolutionLi(solution: Solution) {
         if (index == 0) return [];
 
         let elements: (Element | string)[] = [];
+
+        let pad = false;
+
         if (number === 0) {
             let restart = document.createElement("span");
-            restart.textContent = "[R]";
+            restart.textContent = "[R] ";
             restart.className = "restart";
             elements.push(restart);
         } else {
-            elements.push(number.toString());
-        }
-
-        if (index !== solution.route.length - 1) {
-            elements.push(", ");
+            let num = number.toString();
+            elements.push(pad ? num.padEnd(3) : (num + " "));
+            length = num.length;
         }
 
         return elements;

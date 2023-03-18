@@ -149,6 +149,7 @@ body {
 }
 
 #outputList li {
+    white-space: pre-wrap;
     list-style: none;
 }
 
