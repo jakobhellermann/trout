@@ -9,13 +9,27 @@ use anyhow::{anyhow, Context, Result};
 const PLACEHOLDER: &str = "60000";
 const RESTART_PENALTY: u32 = 190;
 
-fn main() -> Result<()> {
-    let paths: Vec<_> = std::env::args().skip(1).map(PathBuf::from).collect();
-    anyhow::ensure!(paths.len() > 0, "missing argument of path to lobby folder");
+fn main() {
+    let mut paths: Vec<_> = std::env::args().skip(1).map(PathBuf::from).collect();
+    let mut in_cwd = false;
+    if paths.is_empty() {
+        paths.push(std::env::current_dir().unwrap());
+        in_cwd = true;
+    }
+    if let Err(e) = run(&paths) {
+        eprintln!("{e:?}");
+    }
 
+    if in_cwd {
+        let _ = std::io::stdin().read_line(&mut String::new());
+    }
+}
+fn run(paths: &[PathBuf]) -> Result<()> {
     for path in paths {
-        println!("{}:", path.display());
-        let table = construct_table(&path)?;
+        if paths.len() > 0 {
+            println!("{}:", path.display());
+        }
+        let table = construct_table(path)?;
 
         println!("{}\n\n", table);
     }
