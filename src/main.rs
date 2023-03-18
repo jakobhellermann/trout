@@ -10,7 +10,7 @@ fn solve_table(table: &str) -> Result<()> {
 
     let start = std::time::Instant::now();
 
-    let max_solutions = 100;
+    let max_solutions = 12;
 
     let mut previous_best = u32::MAX;
     let mut previous_worst = u32::MAX;
@@ -48,7 +48,7 @@ fn solve_table(table: &str) -> Result<()> {
     });
     let duration = start.elapsed();
 
-    for (route, time) in best_solutions[0..5].iter().rev() {
+    for (route, time) in best_solutions[0..max_solutions.min(5)].iter().rev() {
         println!("{:?} - {}", route, time);
     }
 
