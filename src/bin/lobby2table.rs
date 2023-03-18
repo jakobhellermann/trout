@@ -31,6 +31,17 @@ fn run(paths: &[PathBuf]) -> Result<()> {
         }
         let table = construct_table(path)?;
 
+        #[cfg(feature = "clipboard")]
+        {
+            let mut clipboard = arboard::Clipboard::new().context("failed to acquire clipboard")?;
+            clipboard
+                .set()
+                .text(&table)
+                .context("failed to set clipboard")?;
+
+            eprintln!("table copied to clipboard");
+        }
+
         println!("{}\n\n", table);
     }
 
