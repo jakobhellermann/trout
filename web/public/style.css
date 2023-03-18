@@ -97,7 +97,7 @@ body {
     height: 16em;
 }
 
-#settings #onlyRequiredRestarts {
+#settings input[type="checkbox"] {
     justify-self: start;
 }
 
