@@ -12,6 +12,9 @@ body {
 
     --highlight-color: rgb(189, 245, 255);
     --restart-color: rgb(6, 180, 50);
+
+    --time-color: #60acee;
+    --rank-color: rgb(58, 63, 65);
 }
 
 body.dark-theme {
@@ -22,6 +25,9 @@ body.dark-theme {
 
     --highlight-color: rgb(29, 72, 80);
     --restart-color: rgb(218, 165, 32);
+
+    --time-color: #a6d5ff;
+    --rank-color: rgb(151, 151, 168);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,6 +39,9 @@ body.dark-theme {
 
         --highlight-color: rgb(189, 245, 255);
         --restart-color: rgb(6, 180, 50);
+
+        --time-color: #60acee;
+        --rank-color: rgb(58, 63, 65);
     }
 
     body {
@@ -43,6 +52,9 @@ body.dark-theme {
 
         --highlight-color: rgb(29, 72, 80);
         --restart-color: rgb(218, 165, 32);
+
+        --time-color: #a6d5ff;
+        --rank-color: rgb(151, 151, 168);
     }
 }
 
@@ -142,6 +154,7 @@ body {
 
 #outputList li::before {
     content: counter(list, decimal) ") ";
+    color: var(--rank-color);
     counter-increment: list;
 }
 
@@ -151,6 +164,11 @@ body {
 
 #outputList {
     width: fit-content;
+}
+
+#outputList li .time {
+    color: var(--time-color);
+    font-weight: bold;
 }
 
 #outputList li code {

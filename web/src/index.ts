@@ -25,7 +25,8 @@ let setSpinning = (active: boolean) => loadingIndicator.classList.toggle("disabl
 
 function createSolutionLi(solution: Solution) {
     let timeEl = document.createElement("span");
-    timeEl.textContent = `${formatDuration(solution.time * 17, true)} (${solution.time}) with`;
+    timeEl.className = "time";
+    timeEl.textContent = `${formatDuration(solution.time * 17, true)} (${solution.time}): `;
     let routeEl = document.createElement("code");
 
     let routeElements = solution.route.flatMap<Element | string>((number, index) => {
