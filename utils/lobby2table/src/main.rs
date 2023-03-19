@@ -2,6 +2,7 @@ use std::{
     collections::BTreeMap,
     fmt::Write,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -49,63 +50,12 @@ fn run(paths: &[PathBuf]) -> Result<()> {
 }
 
 fn construct_table(path: &Path) -> Result<String> {
-    let dir = path.read_dir()?;
+    let (n, connections, benches) = collect_entries(path)?;
 
-    let mut nodes = Vec::new();
-
-    for entry in dir {
-        let entry = entry?;
-        let path = entry.path();
-        if path.extension().map_or(true, |ext| ext != "tas") {
-            continue;
-        }
-
-        anyhow::ensure!(
-            entry.metadata()?.is_file(),
-            "{} is not a file",
-            path.display()
-        );
-
-        let stem = path
-            .file_stem()
-            .unwrap()
-            .to_str()
-            .ok_or_else(|| anyhow!("non-UTF8 path: {}", path.display()))?;
-        let node = node_path(stem).ok_or_else(|| anyhow!("invalid filename: {stem}"))?;
-
-        let Ok(start) = node.start.parse::<u32>() else {
-            // eprintln!("skipping {}", node);
-            continue;
-        };
-        let Ok(end) = node.end.parse::<u32>() else {
-            // eprintln!("skipping {}", node);
-            continue;
-        };
-
-        let text = std::fs::read_to_string(&path)
-            .with_context(|| format!("could not read {}", path.display()))?;
-        let time = extract_node_time(&text)
-            .with_context(|| format!("could not extract time from {}", path.display()))?;
-
-        let node = Node { start, end, time };
-        nodes.push(node);
-    }
-
-    let n: u32 = nodes
-        .iter()
-        .map(|node| node.start.max(node.end))
-        .max()
-        .ok_or_else(|| anyhow::anyhow!("no nodes present"))?;
-
-    let mut map = BTreeMap::<u32, BTreeMap<u32, u32>>::new();
-    for node in nodes {
-        map.entry(node.start)
-            .or_default()
-            .insert(node.end, node.time);
-    }
+    for bench in benches {}
 
     let mut text = String::new();
-    for (from, row) in map {
+    for (from, row) in connections {
         let row = (0..=n)
             .map(|to| {
                 if to == from {
@@ -128,6 +78,80 @@ fn construct_table(path: &Path) -> Result<String> {
     }
 
     Ok(text)
+}
+fn collect_entries(
+    path: &Path,
+) -> Result<(u32, BTreeMap<u32, BTreeMap<u32, u32>>, Vec<BenchNode>)> {
+    let dir = path.read_dir()?;
+
+    let mut nodes = Vec::new();
+    let mut benches = Vec::new();
+
+    for entry in dir {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().map_or(true, |ext| ext != "tas") {
+            continue;
+        }
+
+        anyhow::ensure!(
+            entry.metadata()?.is_file(),
+            "{} is not a file",
+            path.display()
+        );
+
+        let stem = path
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .ok_or_else(|| anyhow!("non-UTF8 path: {}", path.display()))?;
+        let node = node_path(stem).ok_or_else(|| anyhow!("invalid filename: {stem}"))?;
+
+        let start = node
+            .start
+            .parse::<Location>()
+            .context("failed to parse start node")?;
+        let end = node
+            .end
+            .parse::<Location>()
+            .context("failed to parse end node")?;
+
+        let text = std::fs::read_to_string(&path)
+            .with_context(|| format!("could not read {}", path.display()))?;
+        let time = extract_node_time(&text)
+            .with_context(|| format!("could not extract time from {}", path.display()))?;
+
+        match (start, end) {
+            (Location::Map(start), Location::Map(end)) => {
+                let node = Node { start, end, time };
+                nodes.push(node);
+            }
+            (Location::Bench(start), Location::Map(end)) => {
+                benches.push(BenchNode::From { start, end, time });
+            }
+            (Location::Map(start), Location::Bench(end)) => {
+                benches.push(BenchNode::To { start, end, time });
+            }
+            (Location::Bench(start), Location::Bench(end)) => {
+                return Err(anyhow!("bench-to-bench connection: {}-{}", start, end))
+            }
+        }
+    }
+
+    let n: u32 = nodes
+        .iter()
+        .map(|node| node.start.max(node.end))
+        .max()
+        .ok_or_else(|| anyhow::anyhow!("no nodes present"))?;
+
+    let mut map = BTreeMap::<u32, BTreeMap<u32, u32>>::new();
+    for node in nodes {
+        map.entry(node.start)
+            .or_default()
+            .insert(node.end, node.time);
+    }
+
+    Ok((n, map, benches))
 }
 
 fn extract_node_time(text: &str) -> Result<u32> {
@@ -182,4 +206,25 @@ struct Node {
     start: u32,
     end: u32,
     time: u32,
+}
+
+#[derive(Debug, Clone)]
+enum Location {
+    Bench(String),
+    Map(u32),
+}
+impl FromStr for Location {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.parse::<u32>() {
+            Ok(id) => Ok(Location::Map(id)),
+            Err(_) => Ok(Location::Bench(s.to_owned())),
+        }
+    }
+}
+
+enum BenchNode {
+    From { start: String, end: u32, time: u32 },
+    To { start: u32, end: String, time: u32 },
 }
