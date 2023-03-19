@@ -1,0 +1,8 @@
+[package]
+name = "lobby2table"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.70"
+arboard = { version = "3.2.0", optional = true }

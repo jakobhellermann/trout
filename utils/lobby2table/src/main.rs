@@ -42,7 +42,7 @@ fn run(paths: &[PathBuf]) -> Result<()> {
             eprintln!("table copied to clipboard");
         }
 
-        println!("{}\n\n", table);
+        println!("{}", table);
     }
 
     Ok(())
