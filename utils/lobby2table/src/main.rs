@@ -9,6 +9,8 @@ use anyhow::{anyhow, Context, Result};
 
 const PLACEHOLDER: &str = "60000";
 const RESTART_PENALTY: u32 = 190;
+const INCLUDE_BENCHES: bool = false;
+const IGNORE_BENCH_TARGETS: &[&str] = &["E", "D", "G", "F"];
 
 fn main() {
     let mut paths: Vec<_> = std::env::args().skip(1).map(PathBuf::from).collect();
@@ -28,9 +30,9 @@ fn main() {
 fn run(paths: &[PathBuf]) -> Result<()> {
     for path in paths {
         if paths.len() > 0 {
-            println!("{}:", path.display());
+            eprintln!("{}:", path.display());
         }
-        let table = construct_table(path)?;
+        let table = construct_table(path, INCLUDE_BENCHES)?;
 
         #[cfg(feature = "clipboard")]
         {
@@ -49,10 +51,64 @@ fn run(paths: &[PathBuf]) -> Result<()> {
     Ok(())
 }
 
-fn construct_table(path: &Path) -> Result<String> {
-    let (n, connections, benches) = collect_entries(path)?;
+fn construct_table(path: &Path, include_benches: bool) -> Result<String> {
+    let (n, mut connections, benches) = collect_entries(path)?;
 
-    for bench in benches {}
+    if include_benches {
+        let bench_connections: Vec<_> = benches
+            .iter()
+            .filter_map(|bench| match bench {
+                BenchNode::To { start, end, time } => Some((start, end, time)),
+                _ => None,
+            })
+            .flat_map(|(start, end, time)| {
+                let indirect_connections =
+                    benches
+                        .iter()
+                        .filter_map(move |bench_node| match bench_node {
+                            BenchNode::From {
+                                start: other_start,
+                                end: other_end,
+                                time: other_time,
+                            } => {
+                                if IGNORE_BENCH_TARGETS.contains(&other_start.as_str()) {
+                                    return None;
+                                }
+
+                                if other_start != end && *other_end != *start {
+                                    Some((*start, end, other_start, *other_end, time + other_time))
+                                } else {
+                                    None
+                                }
+                            }
+                            BenchNode::To { .. } => None,
+                        });
+
+                let saving_time = indirect_connections
+                    .filter(|(start, _, _, end, time)| {
+                        let time_with_menuing = time + 0; // TODO
+                        let direct_time = connections
+                            .get(&start)
+                            .and_then(|targets| targets.get(&end));
+                        match direct_time {
+                            Some(direct_time) if time_with_menuing < *direct_time => true,
+                            Some(_) => false,
+                            None => true,
+                        }
+                    })
+                    .inspect(|(start, via1, via2, end, time)| {
+                        eprintln!("using {start}-{via1}-{via2}-{end}: {time}");
+                    })
+                    .map(|(start, _, _, end, time)| (start, end, time));
+
+                saving_time
+            })
+            .collect();
+
+        for (start, end, time) in bench_connections {
+            connections.entry(start).or_default().insert(end, time);
+        }
+    }
 
     let mut text = String::new();
     for (from, row) in connections {
@@ -132,8 +188,8 @@ fn collect_entries(
             (Location::Map(start), Location::Bench(end)) => {
                 benches.push(BenchNode::To { start, end, time });
             }
-            (Location::Bench(start), Location::Bench(end)) => {
-                return Err(anyhow!("bench-to-bench connection: {}-{}", start, end))
+            (Location::Bench(_), Location::Bench(_)) => {
+                // are these useful?
             }
         }
     }
@@ -224,6 +280,7 @@ impl FromStr for Location {
     }
 }
 
+#[derive(Debug)]
 enum BenchNode {
     From { start: String, end: u32, time: u32 },
     To { start: u32, end: String, time: u32 },
