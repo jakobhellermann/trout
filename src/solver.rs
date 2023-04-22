@@ -51,56 +51,13 @@ where
 {
     let n = table[0].len();
 
-    let files: Vec<FileInfo> = table
-        .iter()
-        .enumerate()
-        .flat_map(|(start, row)| {
-            let mut row = row.iter().enumerate();
-            let restart = row.next().unwrap().0;
-            // TODO
-            assert!(restart == 190 || restart == 0);
-
-            row.map(move |(end, &time)| FileInfo { start, end, time })
-        })
-        .filter(|file| file.time < 60000 && file.start != file.end)
-        .collect();
-
-    let mut nodes: Vec<PlaceInfo> = (0..n)
-        .map(|node| {
-            let (targets, times) = files
-                .iter()
-                .filter(|i| i.start == node)
-                .map(|outgoing| (outgoing.end, outgoing.time))
-                .unzip();
-            PlaceInfo {
-                node,
-                targets,
-                targeters: Vec::new(),
-                times,
-            }
-        })
-        .collect();
-
-    for node_idx in 0..nodes.len() {
-        let targeters = nodes
-            .iter()
-            .filter(|o| o.targets.contains(&node_idx))
-            .map(|o| o.node)
-            .collect();
-
-        nodes[node_idx].targeters = targeters;
-    }
+    let files: Vec<FileInfo> = collect_files(table);
+    let nodes: Vec<PlaceInfo> = collect_nodes(n, &files);
 
     let start = 0;
     let finish = n - 1;
 
-    let mut lowest_times = vec![Time::MAX; n];
-    lowest_times[0] = 0;
-    for node in &nodes {
-        for (&target, &time) in node.targets.iter().zip(node.times.iter()) {
-            lowest_times[target] = lowest_times[target].min(time);
-        }
-    }
+    let lowest_times = collect_lowest_times(n, &nodes);
 
     let global_lower_bound: Time = lowest_times.iter().sum();
 
@@ -132,6 +89,64 @@ where
     };
 
     stats
+}
+
+fn collect_lowest_times(n: usize, nodes: &[PlaceInfo]) -> Vec<u32> {
+    let mut lowest_times = vec![Time::MAX; n];
+    lowest_times[0] = 0;
+    for node in nodes {
+        for (&target, &time) in node.targets.iter().zip(node.times.iter()) {
+            lowest_times[target] = lowest_times[target].min(time);
+        }
+    }
+    lowest_times
+}
+
+/// extract file connections from table
+fn collect_files(table: &[Vec<u32>]) -> Vec<FileInfo> {
+    table
+        .iter()
+        .enumerate()
+        .flat_map(|(start, row)| {
+            let mut row = row.iter().enumerate();
+            let restart = row.next().unwrap().0;
+            // TODO
+            assert!(restart == 190 || restart == 0);
+
+            row.map(move |(end, &time)| FileInfo { start, end, time })
+        })
+        .filter(|file| file.time < 60000 && file.start != file.end)
+        .collect()
+}
+
+/// collect files into a datastructure better suited for traversal
+fn collect_nodes(n: usize, files: &[FileInfo]) -> Vec<PlaceInfo> {
+    let mut nodes: Vec<_> = (0..n)
+        .map(|node| {
+            let (targets, times) = files
+                .iter()
+                .filter(|i| i.start == node)
+                .map(|outgoing| (outgoing.end, outgoing.time))
+                .unzip();
+            PlaceInfo {
+                node,
+                targets,
+                targeters: Vec::new(),
+                times,
+            }
+        })
+        .collect();
+    for node_idx in 0..nodes.len() {
+        let targeters = nodes
+            .iter()
+            .filter(|o| o.targets.contains(&node_idx))
+            .map(|o| o.node)
+            .collect();
+
+        nodes[node_idx].targeters = targeters;
+    }
+
+    nodes
 }
 
 struct SolverContext<'a, F> {
