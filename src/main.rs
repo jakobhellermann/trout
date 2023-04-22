@@ -52,15 +52,25 @@ fn solve_table(table: &str) -> Result<()> {
 
     println!("\n\nPossible new connections:");
     let suggestion_start = std::time::Instant::now();
-    trout::solver::find_new_connections(&table, &settings, |possible_connection| {
-        println!(
-            "{: >2}-{: <2}) needs to be {: >3} ({:?})",
-            possible_connection.start,
-            possible_connection.end,
-            possible_connection.frame_difference,
-            possible_connection.path,
-        );
-    });
+
+    let best_time = best_solutions.last().unwrap().1;
+    let frame_difference_threshold = 300;
+
+    trout::solver::find_new_connections(
+        &table,
+        &settings,
+        best_time - frame_difference_threshold,
+        |possible_connection| {
+            println!(
+                "{: >2}-{: <2}) needs to be {: >3}, from {} ({:?})",
+                possible_connection.start,
+                possible_connection.end,
+                best_time - possible_connection.time,
+                possible_connection.time,
+                possible_connection.path,
+            );
+        },
+    );
     let suggestion_duration = suggestion_start.elapsed();
     println!("Suggesting took {:02}s", suggestion_duration.as_secs_f32());
 

@@ -110,13 +110,13 @@ pub struct PossibleConnection<'a> {
 
     pub path: &'a [NodeIdx],
     pub time: Time,
-    pub frame_difference: Time,
 }
 
 /// `emit_new_connection` gets called for each possible connection
 pub fn find_new_connections<F>(
     table: &[Vec<u32>],
     settings: &SolverSettings,
+    time_to_beat: Time,
     mut emit_new_connection: F,
 ) where
     F: FnMut(PossibleConnection<'_>),
@@ -125,8 +125,6 @@ pub fn find_new_connections<F>(
 
     let files: Vec<FileInfo> = collect_files(table);
     let nodes: Vec<PlaceInfo> = collect_nodes(n, &files);
-
-    let Some(reference_solution) = find_single_solution(&files, settings) else { return };
 
     let mut connections = Vec::with_capacity((nodes.len() - 1) * (nodes.len() - 1));
     for start in 0..nodes.len() - 1 {
@@ -157,21 +155,19 @@ pub fn find_new_connections<F>(
             if time < solution.1 {
                 *solution = (s.to_vec(), time);
             }
-            solution.1.min(reference_solution.1)
+            solution.1.min(time_to_beat)
         });
         let Some(new_solution) = solution else { continue };
 
-        if new_solution.1 > reference_solution.1 {
+        if new_solution.1 > time_to_beat {
             continue;
         }
-        let frame_difference = reference_solution.1 - new_solution.1;
 
         emit_new_connection(PossibleConnection {
             start: connection_start,
             end: connection_end,
             path: &new_solution.0,
             time: new_solution.1,
-            frame_difference,
         });
     }
 }
@@ -457,13 +453,4 @@ pub fn emit_top_n_solutions(
             previous_worst
         }
     }
-}
-
-fn find_single_solution(
-    files: &[FileInfo],
-    settings: &SolverSettings,
-) -> Option<(Vec<NodeIdx>, Time)> {
-    let mut solution = None;
-    solve_files(files, settings, emit_only_best(&mut solution));
-    solution
 }
