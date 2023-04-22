@@ -20,7 +20,7 @@ fn doit(
     let mut previous_worst = u32::MAX;
     let mut best_solutions = Vec::new();
 
-    let stats = trout::solver::solve(&table, &settings, |solution, time| {
+    let stats = trout::solver::solve_table(&table, &settings, |solution, time| {
         let is_windup = best_solutions.len() < max_solutions;
 
         if time < previous_worst || is_windup {

@@ -51,6 +51,7 @@ fn solve_table(table: &str) -> Result<()> {
     }
 
     println!("\n\nPossible new connections:");
+    let suggestion_start = std::time::Instant::now();
     trout::solver::find_new_connections(&table, &settings, |possible_connection| {
         println!(
             "{: >2}-{: <2}) needs to be {: >3} ({:?})",
@@ -60,6 +61,8 @@ fn solve_table(table: &str) -> Result<()> {
             possible_connection.path,
         );
     });
+    let suggestion_duration = suggestion_start.elapsed();
+    println!("Suggesting took {:02}s", suggestion_duration.as_secs_f32());
 
     Ok(())
 }

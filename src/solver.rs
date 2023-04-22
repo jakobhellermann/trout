@@ -150,7 +150,17 @@ pub fn find_new_connections<F>(
         }
 
         let files = edit_files_to_test_new_connection(&files, connection_start, connection_end);
-        let Some(new_solution) = find_single_solution(&files, settings) else { continue };
+
+        let mut solution = None;
+        solve_files(&files, settings, |s: &[NodeIdx], time: Time| -> Time {
+            let solution = solution.get_or_insert_with(|| (s.to_vec(), time));
+            if time < solution.1 {
+                *solution = (s.to_vec(), time);
+            }
+            solution.1.min(reference_solution.1)
+        });
+        let Some(new_solution) = solution else { continue };
+
         if new_solution.1 > reference_solution.1 {
             continue;
         }
