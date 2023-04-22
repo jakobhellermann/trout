@@ -309,3 +309,45 @@ where
         }
     }
 }
+
+pub fn emit_only_best(
+    solution: &mut Option<(Vec<NodeIdx>, Time)>,
+) -> impl FnMut(&[NodeIdx], Time) -> Time + '_ {
+    |s: &[NodeIdx], time: Time| -> Time {
+        let solution = solution.get_or_insert_with(|| (s.to_vec(), time));
+        if time < solution.1 {
+            *solution = (s.to_vec(), time);
+        }
+        solution.1
+    }
+}
+
+pub fn emit_top_n_solutions(
+    best_solutions: &mut Vec<(Vec<usize>, u32)>,
+    max_solutions: usize,
+) -> impl FnMut(&[usize], u32) -> u32 + '_ {
+    let mut previous_worst = u32::MAX;
+
+    move |solution, time| {
+        // perfect compat with c# solver: accept every solution (even if obsolete) and return high worst interested time
+        let is_windup = best_solutions.len() < max_solutions;
+
+        if time < previous_worst || is_windup {
+            best_solutions.push((solution.to_vec(), time));
+            best_solutions.sort_by_key(|&(_, time)| time);
+            best_solutions.truncate(max_solutions);
+
+            previous_worst = best_solutions
+                .iter()
+                .map(|&(_, time)| time)
+                .max()
+                .unwrap_or(std::u32::MAX);
+        }
+
+        if is_windup {
+            u32::MAX
+        } else {
+            previous_worst
+        }
+    }
+}

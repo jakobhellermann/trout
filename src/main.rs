@@ -11,9 +11,6 @@ fn solve_table(table: &str) -> Result<()> {
     let start = std::time::Instant::now();
 
     let max_solutions = 12;
-
-    let mut previous_best = u32::MAX;
-    let mut previous_worst = u32::MAX;
     let mut best_solutions: Vec<(Vec<usize>, u32)> = Vec::new();
 
     #[cfg(feature = "heap_profiling")]
@@ -24,28 +21,11 @@ fn solve_table(table: &str) -> Result<()> {
         only_required_restarts: false,
         restart_penalty: 190,
     };
-    let stats = trout::solver::solve(&table, &settings, |solution, time| {
-        // perfect compat with c# solver: accept every solution (even if obsolete) and return high worst interested time
-        let is_windup = best_solutions.len() < max_solutions;
-
-        if time < previous_worst || is_windup {
-            best_solutions.push((solution.to_vec(), time));
-            best_solutions.sort_by_key(|&(_, time)| time);
-            best_solutions.truncate(max_solutions);
-
-            (previous_best, previous_worst) = best_solutions
-                .iter()
-                .fold((std::u32::MAX, std::u32::MIN), |(min, max), &(_, time)| {
-                    (min.min(time), max.max(time))
-                });
-        }
-
-        if is_windup {
-            u32::MAX
-        } else {
-            previous_worst
-        }
-    });
+    let stats = trout::solver::solve(
+        &table,
+        &settings,
+        trout::solver::emit_top_n_solutions(&mut best_solutions, max_solutions),
+    );
     let duration = start.elapsed();
 
     for (route, time) in best_solutions[0..max_solutions.min(5)].iter().rev() {
