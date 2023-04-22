@@ -60,6 +60,12 @@
                 <input id="restartPenalty" type="number" value="190" required> -->
 
                 <button id="solveBtn" type="submit">Solve</button>
+
+                <label for="suggestFrameThreshold">Threshold for undrafted</label>
+                <input id="suggestFrameThreshold" type="number" value="0">
+
+                <button id="suggestBtn" type="button" disabled>Check undrafted connections</button>
+
             </form>
 
 
@@ -81,14 +87,24 @@
         <hr>
 
         <div class="output">
+
             <div>
-                <ol id="outputList">
+                <ol id="solveOutputList" class="outputList">
                 </ol>
 
                 <p id="errorMessage"></p>
                 <p id="statsMessage"></p>
 
-                <div id="loadingIndicator" class="disabled">
+                <div id="solveLoadingIndicator" class="disabled">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+            <div>
+                <ul id="suggestOutputList" class="outputList">
+                </ul>
+
+                <div id="suggestLoadingIndicator" class="disabled">
                     <div class="spinner"></div>
                 </div>
             </div>

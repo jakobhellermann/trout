@@ -1,5 +1,5 @@
 use js_sys::Array;
-use trout::solver::SolverSettings;
+use trout::solver::{PossibleConnection, SolverSettings};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -8,7 +8,7 @@ extern "C" {
     fn log(s: &str);
 }
 
-fn doit(
+fn do_solve(
     table: &str,
     settings: SolverSettings,
     max_solutions: usize,
@@ -72,7 +72,7 @@ pub fn solve(
 
     log(&format!("{:?}", settings));
 
-    let stats = doit(
+    let stats = do_solve(
         &table,
         settings,
         max_solutions,
@@ -99,4 +99,55 @@ pub fn solve(
     js_sys::Reflect::set(&obj, &"cutBranches".into(), &stats.cut_branches.into()).unwrap();
 
     Ok(obj)
+}
+
+fn do_suggest(
+    table: &str,
+    settings: SolverSettings,
+    time_to_beat: u32,
+    emit_solution: impl Fn(PossibleConnection<'_>),
+) -> Result<(), anyhow::Error> {
+    let table = trout::parse_table(table)?;
+
+    trout::solver::find_new_connections(&table, &settings, time_to_beat, emit_solution);
+
+    Ok(())
+}
+
+#[wasm_bindgen]
+pub fn suggest_solutions(
+    table: String,
+    max_restarts: Option<u32>,
+    only_required_restarts: bool,
+    restart_penalty: u32,
+    time_to_beat: u32,
+    callback: &js_sys::Function,
+) -> Result<(), String> {
+    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+
+    let settings = trout::solver::SolverSettings {
+        max_restarts,
+        only_required_restarts,
+        restart_penalty,
+    };
+
+    do_suggest(&table, settings, time_to_beat, |possible_connection| {
+        let route = possible_connection
+            .path
+            .iter()
+            .copied()
+            .map(JsValue::from)
+            .collect::<Array>();
+
+        let args = js_sys::Array::from_iter([
+            JsValue::from(possible_connection.start),
+            JsValue::from(possible_connection.end),
+            JsValue::from(possible_connection.time),
+            JsValue::from(route),
+        ]);
+        let _ = callback.apply(&JsValue::NULL, &args);
+    })
+    .map_err(|e| format!("{:?}", e))?;
+
+    Ok(())
 }

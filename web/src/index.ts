@@ -1,18 +1,27 @@
-import { solve, setOnSolutions } from "./solver";
-import type { Solution } from "./worker";
+import { solve, setOnSolutions, suggest, setOnSuggestion } from "./solver";
+import type { Solution, Suggestion } from "./worker";
 import "./theme";
 
 let solveBtn = document.getElementById("solveBtn")!;
-let outputList = document.getElementById("outputList")!;
-let loadingIndicator = document.getElementById("loadingIndicator")!;
+let solveOutputList = document.getElementById("solveOutputList")!;
+let solveLoadingIndicator = document.getElementById("solveLoadingIndicator")!;
+let suggestBtn = document.getElementById("suggestBtn")! as HTMLButtonElement;
+let suggestOutputList = document.getElementById("suggestOutputList")!;
+let suggestLoadingIndicator = document.getElementById("suggestLoadingIndicator")!;
 let errorMessage = document.getElementById("errorMessage")!;
 let statsMessage = document.getElementById("statsMessage")!;
+let settingsForm = document.getElementById("settings")!;
 
 let inputTimeTable = document.getElementById("timeTable") as HTMLTextAreaElement;
 let inputNSolutions = document.getElementById("nSolutions") as HTMLInputElement;
 let inputMaxRestarts = document.getElementById("maxRestarts") as HTMLInputElement;
 let inputOnlyRequiredRestarts = document.getElementById("onlyRequiredRestarts") as HTMLInputElement;
 let inputRestartPenalty = document.getElementById("restartPenalty") as HTMLInputElement;
+let inputSuggestThreshold = document.getElementById("suggestFrameThreshold") as HTMLInputElement;
+
+suggestBtn.disabled = true;
+
+let bestSolution: number | undefined = undefined;
 
 inputTimeTable.addEventListener("keypress", (e) => {
     if (e.key === "Enter" && e.ctrlKey) {
@@ -21,15 +30,14 @@ inputTimeTable.addEventListener("keypress", (e) => {
     }
 });
 
-let setSpinning = (active: boolean) => loadingIndicator.classList.toggle("disabled", !active);
 
-function createSolutionLi(solution: Solution) {
-    let timeEl = document.createElement("span");
-    timeEl.className = "time";
-    timeEl.textContent = `${formatDuration(solution.time * 17, true)} (${solution.time}): `;
+let setSolverSpinning = (active: boolean) => solveLoadingIndicator.classList.toggle("disabled", !active);
+let setSuggestSpinning = (active: boolean) => suggestLoadingIndicator.classList.toggle("disabled", !active);
+
+function createRouteElement(route: number[]): HTMLElement {
     let routeEl = document.createElement("code");
 
-    let routeElements = solution.route.flatMap<Element | string>((number, index) => {
+    let routeElements = route.flatMap<Element | string>((number, index) => {
         if (index == 0) return [];
 
         let elements: (Element | string)[] = [];
@@ -50,6 +58,15 @@ function createSolutionLi(solution: Solution) {
         return elements;
     });
     routeEl.replaceChildren(...routeElements);
+    return routeEl;
+}
+
+function createSolutionLi(solution: Solution): HTMLLIElement {
+    let timeEl = document.createElement("span");
+    timeEl.className = "time";
+    timeEl.textContent = `${formatDuration(solution.time * 17, true)} (${solution.time}): `;
+
+    let routeEl = createRouteElement(solution.route);
 
     let li = document.createElement("li");
     li.className = "newSolution";
@@ -57,7 +74,6 @@ function createSolutionLi(solution: Solution) {
 
     return li;
 }
-
 
 function truncateChildren(element: Element, length: number) {
     while (element.childElementCount > length) {
@@ -69,17 +85,51 @@ function insertChildAt(parent: Element, child: Element, index: number) {
     if (index >= parent.childElementCount) {
         parent.appendChild(child);
     } else {
-        outputList.insertBefore(child, parent.children[index]);
+        solveOutputList.insertBefore(child, parent.children[index]);
+    }
+}
+
+function createSuggestionLi(suggestion: Suggestion): HTMLLIElement {
+    if (bestSolution === undefined) {
+        throw new Error("attempted to suggest new drafts without solving first");
     }
 
+    let frameDifference = bestSolution - suggestion.time;
+
+    let nodeEl = document.createElement("span");
+    nodeEl.textContent = `${suggestion.start}-${suggestion.end}`;
+    nodeEl.className = "suggestConnection";
+
+    let timeEl = document.createElement("span");
+    timeEl.className = "time";
+    timeEl.textContent = `[${frameDifference}f]`;
+
+    let routeEl = createRouteElement(suggestion.route);
+
+    let li = document.createElement("li");
+    li.className = "newSolution";
+    li.replaceChildren(nodeEl, " ", timeEl, " ", routeEl);
+
+    return li;
 }
+
+
 
 setOnSolutions((solution, updatedIndex) => {
     let nSolutions = Number(inputNSolutions.value);
 
+    if (bestSolution === undefined || solution.time < bestSolution) {
+        bestSolution = solution.time;
+    }
+
     let li = createSolutionLi(solution);
-    insertChildAt(outputList, li, updatedIndex);
-    truncateChildren(outputList, nSolutions);
+    insertChildAt(solveOutputList, li, updatedIndex);
+    truncateChildren(solveOutputList, nSolutions);
+});
+
+setOnSuggestion((suggestion) => {
+    let li = createSuggestionLi(suggestion);
+    suggestOutputList.appendChild(li);
 });
 
 function formatDuration(millis: number, alwaysIncludeMinutes?: boolean) {
@@ -102,9 +152,13 @@ function formatDuration(millis: number, alwaysIncludeMinutes?: boolean) {
 }
 
 solveBtn.addEventListener("click", () => {
-    setSpinning(true);
+    setSolverSpinning(true);
+    setSuggestSpinning(false);
+    suggestBtn.disabled = true;
+    bestSolution = undefined;
 
-    outputList.replaceChildren();
+    solveOutputList.replaceChildren();
+    suggestOutputList.replaceChildren();
     statsMessage.textContent = "";
     errorMessage.textContent = "";
 
@@ -132,12 +186,43 @@ solveBtn.addEventListener("click", () => {
             } else {
                 statsMessage.textContent = "Code not fully loaded yet, try again later";
             }
+            suggestBtn.disabled = false;
         })
         .catch((error: Error) => {
             errorMessage.textContent = `Error: ${error.message}`;
             console.error(error);
         })
         .finally(() => {
-            setSpinning(false);
+            setSolverSpinning(false);
+        });
+});
+
+suggestBtn.addEventListener("click", () => {
+    if (bestSolution === undefined) {
+        throw new Error("attempted to suggest new drafts without solving first");
+    }
+
+    setSuggestSpinning(true);
+
+    suggestOutputList.replaceChildren();
+
+    let table = inputTimeTable.value;
+    let maxRestarts = inputMaxRestarts.value !== "" ? Number(inputMaxRestarts.value) : undefined;
+    let onlyRequiredRestarts = inputOnlyRequiredRestarts.checked;
+    // let restartPenalty = Number(inputRestartPenalty.value);
+    let restartPenalty = 190;
+
+    let frameThreshold = Number(inputSuggestThreshold.value);
+    let timeToBeat = bestSolution - frameThreshold;
+
+    suggest({
+        table, maxRestarts, onlyRequiredRestarts, restartPenalty, timeToBeat
+    })
+        .catch((error: Error) => {
+            errorMessage.textContent = `Error: ${error.message}`;
+            console.error(error);
+        })
+        .finally(() => {
+            setSuggestSpinning(false);
         });
 });

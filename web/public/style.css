@@ -103,6 +103,12 @@ body {
 
 #settings #solveBtn {
     margin-top: 1rem;
+    margin-bottom: 1rem;
+    grid-column-start: 1;
+    grid-column-end: 3;
+}
+
+#settings #suggestBtn {
     grid-column-start: 1;
     grid-column-end: 3;
 }
@@ -141,7 +147,7 @@ body {
     right: 0;
 }
 
-#outputList {
+#solveOutputList {
     padding: 0;
     list-style-type: decimal;
 
@@ -149,12 +155,12 @@ body {
     position: relative;
 }
 
-#outputList li {
+#solveOutputList li {
     white-space: pre-wrap;
     list-style: none;
 }
 
-#outputList li::before {
+#solveOutputList li::before {
     content: counter(list, decimal) ") ";
     color: var(--rank-color);
     counter-increment: list;
@@ -164,20 +170,40 @@ body {
     text-align: right;
 }
 
-#outputList :not(:first-child) {
+#suggestOutputList {
+    padding: 0rem;
+    padding-right: 1rem;
+    list-style: none;
+
+    max-height: 24rem;
+    overflow: scroll;
+
+}
+
+#suggestOutputList .suggestConnection {
+    color: rgb(6, 180, 50);
+    font-weight: bold;
+
+
+    display: inline-block;
+    width: 2.5em;
+    text-align: right;
+}
+
+.outputList :not(:first-child) {
     margin-top: 0.5rem;
 }
 
-#outputList {
+.outputList {
     width: fit-content;
 }
 
-#outputList li .time {
+.outputList li .time {
     color: var(--time-color);
     font-weight: bold;
 }
 
-#outputList li code {
+.outputList li code {
     font-size: large;
 }
 
