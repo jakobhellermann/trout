@@ -3,11 +3,11 @@
 type Time = u32;
 type NodeIdx = usize;
 
-#[derive(Debug)]
-struct FileInfo {
-    start: NodeIdx,
-    end: NodeIdx,
-    time: Time,
+#[derive(Debug, Clone)]
+pub struct FileInfo {
+    pub start: NodeIdx,
+    pub end: NodeIdx,
+    pub time: Time,
 }
 
 #[derive(Debug)]
@@ -44,14 +44,27 @@ pub struct Stats {
     pub cut_branches: u32,
 }
 
-/// `R` gets called for each new solution, and returns the worst new interesting time
-pub fn solve<F>(table: &[Vec<u32>], settings: &SolverSettings, emit_solution: F) -> Stats
+/// `emit_solution` gets called for each new solution, and returns the worst new interesting time
+pub fn solve_table<F>(table: &[Vec<u32>], settings: &SolverSettings, emit_solution: F) -> Stats
 where
     F: FnMut(&[NodeIdx], Time) -> Time,
 {
-    let n = table[0].len();
-
     let files: Vec<FileInfo> = collect_files(table);
+    solve_files(&files, settings, emit_solution)
+}
+
+/// `emit_solution` gets called for each new solution, and returns the worst new interesting time
+pub fn solve_files<F>(files: &[FileInfo], settings: &SolverSettings, emit_solution: F) -> Stats
+where
+    F: FnMut(&[NodeIdx], Time) -> Time,
+{
+    let n = files
+        .iter()
+        .map(|file| file.start.max(file.end))
+        .max()
+        .expect("empty files passed")
+        + 1;
+
     let nodes: Vec<PlaceInfo> = collect_nodes(n, &files);
 
     let start = 0;
@@ -89,6 +102,90 @@ where
     };
 
     stats
+}
+
+pub struct PossibleConnection<'a> {
+    pub start: NodeIdx,
+    pub end: NodeIdx,
+
+    pub path: &'a [NodeIdx],
+    pub time: Time,
+    pub frame_difference: Time,
+}
+
+/// `emit_new_connection` gets called for each possible connection
+pub fn find_new_connections<F>(
+    table: &[Vec<u32>],
+    settings: &SolverSettings,
+    mut emit_new_connection: F,
+) where
+    F: FnMut(PossibleConnection<'_>),
+{
+    let n = table[0].len();
+
+    let files: Vec<FileInfo> = collect_files(table);
+    let nodes: Vec<PlaceInfo> = collect_nodes(n, &files);
+
+    let Some(reference_solution) = find_single_solution(&files, settings) else { return };
+
+    let mut connections = Vec::with_capacity((nodes.len() - 1) * (nodes.len() - 1));
+    for start in 0..nodes.len() - 1 {
+        for end in 1..nodes.len() - 1 {
+            connections.push((start, end));
+        }
+    }
+
+    for (connection_start, connection_end) in connections {
+        if connection_end == connection_start
+            || connection_start == 0 && connection_end == nodes.len()
+        {
+            continue;
+        }
+
+        if files
+            .iter()
+            .any(|file| file.start == connection_start && file.end == connection_end)
+        {
+            continue;
+        }
+
+        let files = edit_files_to_test_new_connection(&files, connection_start, connection_end);
+        let Some(new_solution) = find_single_solution(&files, settings) else { continue };
+        if new_solution.1 > reference_solution.1 {
+            continue;
+        }
+        let frame_difference = reference_solution.1 - new_solution.1;
+
+        emit_new_connection(PossibleConnection {
+            start: connection_start,
+            end: connection_end,
+            path: &new_solution.0,
+            time: new_solution.1,
+            frame_difference,
+        });
+    }
+}
+
+/// - remove start-* and *-end
+/// - add start-end with time 0
+fn edit_files_to_test_new_connection(
+    files: &[FileInfo],
+    start: NodeIdx,
+    end: NodeIdx,
+) -> Vec<FileInfo> {
+    let mut new_files = files.to_vec();
+    new_files.retain(|file| file.start != start && file.end != end);
+
+    new_files.insert(
+        if start == 0 { 0 } else { new_files.len() },
+        FileInfo {
+            start,
+            end,
+            time: 0,
+        },
+    );
+
+    new_files
 }
 
 fn collect_lowest_times(n: usize, nodes: &[PlaceInfo]) -> Vec<u32> {
@@ -350,4 +447,13 @@ pub fn emit_top_n_solutions(
             previous_worst
         }
     }
+}
+
+fn find_single_solution(
+    files: &[FileInfo],
+    settings: &SolverSettings,
+) -> Option<(Vec<NodeIdx>, Time)> {
+    let mut solution = None;
+    solve_files(files, settings, emit_only_best(&mut solution));
+    solution
 }

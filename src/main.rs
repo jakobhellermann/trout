@@ -21,7 +21,7 @@ fn solve_table(table: &str) -> Result<()> {
         only_required_restarts: false,
         restart_penalty: 190,
     };
-    let stats = trout::solver::solve(
+    let stats = trout::solver::solve_table(
         &table,
         &settings,
         trout::solver::emit_top_n_solutions(&mut best_solutions, max_solutions),
@@ -49,6 +49,17 @@ fn solve_table(table: &str) -> Result<()> {
             println!("Max Restart Count: -")
         }
     }
+
+    println!("\n\nPossible new connections:");
+    trout::solver::find_new_connections(&table, &settings, |possible_connection| {
+        println!(
+            "{: >2}-{: <2}) needs to be {: >3} ({:?})",
+            possible_connection.start,
+            possible_connection.end,
+            possible_connection.frame_difference,
+            possible_connection.path,
+        );
+    });
 
     Ok(())
 }
